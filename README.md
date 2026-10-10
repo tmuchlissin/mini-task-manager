@@ -1,0 +1,71 @@
+# Mini Task Manager
+
+Task board sederhana untuk tim internal. Task bergerak berurutan melalui **To Do → Pending → In Progress → Done**. Setiap perubahan tercatat bersama actor dan waktu kejadian.
+
+## Menjalankan aplikasi
+
+Prasyarat: Node.js 20+, npm, dan PostgreSQL (misalnya Neon).
+
+1. Buat `backend/.env`:
+
+   ```env
+   DATABASE_URL=postgresql://user:password@host/database?sslmode=require
+   ```
+
+2. Pasang dependency dan siapkan tabel:
+
+   ```bash
+   npm install
+   npm run db:migrate -w backend
+   ```
+
+3. Jalankan frontend dan backend:
+
+   ```bash
+   npm run dev
+   ```
+
+Frontend: http://localhost:5173. Backend: http://localhost:3001. Dalam mode development, Vite meneruskan `/api` ke Express. Untuk menjalankan secara terpisah, gunakan `npm run dev -w frontend` dan `npm run dev -w backend`.
+
+Pemeriksaan: `npm run typecheck`, `npm run build`, dan `npm test -w backend`. Tes integrasi memakai database pada `DATABASE_URL`, membuat satu task uji, lalu menghapusnya secara *soft delete*. Tabel dan data lain tidak dihapus.
+
+## Arsitektur
+
+```text
+React (frontend/src/App.tsx) → Express (backend/src/app.ts) → PostgreSQL
+                                                        ↳ tasks + audit_logs
+```
+
+Frontend menampilkan empat kolom, form pembuatan, dropdown actor, tombol untuk pindah ke status berikutnya, panel riwayat, serta daftar task yang dihapus. Backend memvalidasi input dan urutan status. `backend/schema.sql` berisi skema dan trigger audit log; `backend/src/migrate.ts` menerapkannya.
+
+| Method | Endpoint | Fungsi |
+| --- | --- | --- |
+| `GET` | `/api/actors` | Daftar actor yang dapat dipilih |
+| `GET` | `/api/tasks` | Daftar task aktif; `?includeDeleted=true` menyertakan task terhapus |
+| `POST` | `/api/tasks` | Buat task di `to_do` dengan `title` dan `actor` |
+| `PUT` | `/api/tasks/:id/status` | Ubah ke status berikutnya dengan `status` dan `actor` |
+| `DELETE` | `/api/tasks/:id` | Soft delete dengan `actor` |
+| `GET` | `/api/tasks/:id/audit-logs` | Riwayat kronologis, termasuk task terhapus |
+
+## Asumsi dan trade-off
+
+- Struktur task: `id`, `title`, `status`, `createdAt`, `updatedAt`, `deletedAt`. Task baru selalu berstatus `to_do`.
+- Actor dipilih dari tiga nama tetap. Brief tidak meminta autentikasi; pengguna lain masih bisa memilih nama yang sama.
+- Permintaan ke status yang sama berhasil tanpa menambah log. Perpindahan hanya satu tahap ke depan; kembali atau melompat menghasilkan `409`.
+- Delete memakai soft delete agar task dan audit log tetap dapat dibaca. Pembuatan dan penghapusan juga dicatat.
+- Board memakai tombol perpindahan status agar aturan urutan terlihat jelas.
+- PostgreSQL/Neon memungkinkan status dan log ditulis dalam satu transaksi, dengan tambahan kebutuhan koneksi database dan migrasi.
+
+## Jawaban pertanyaan take-home
+
+**Bagaimana audit log dijaga agar tidak termodifikasi?** API hanya menyediakan operasi baca dan insert. Trigger database menolak `UPDATE`, `DELETE`, dan `TRUNCATE` pada audit log. Task memakai soft delete, dan foreign key membatasi penghapusan fisik task yang memiliki log. Perubahan status dan insert log dilakukan dalam satu transaksi; kegagalan salah satu membatalkan keduanya. Administrator database yang dapat mengubah skema atau menonaktifkan trigger tetap mempunyai kuasa penuh. Untuk produksi perlu pemisahan role database dan kontrol akses yang lebih ketat.
+
+**Apa risiko terbesar jika banyak user memakai aplikasi ini?** Actor dipilih dari dropdown tanpa autentikasi, sehingga atribusi belum membuktikan identitas sebenarnya. Update bersamaan dikendalikan dengan `SELECT ... FOR UPDATE`: permintaan kedua akan dinilai terhadap status terbaru. Latensi database jarak jauh dan batas koneksi juga perlu dipantau saat jumlah user naik.
+
+**Apa yang direfactor pertama jika sistem membesar?** Pisahkan aturan domain dan operasi database dari `app.ts` menjadi service/repository, lalu tambahkan identitas user dari autentikasi. Satu file route masih mudah diikuti untuk scope ini, tetapi pertumbuhan fitur akan membuatnya sulit dirawat.
+
+**Bagaimana AI digunakan?** AI membantu menyusun kerangka workspace, API, skema SQL, UI board, dokumentasi, dan tes. Solusi divalidasi dengan pemeriksaan TypeScript, build, migrasi database, serta tes integrasi terhadap Neon untuk transisi status, idempotensi, soft delete, dan sifat append-only audit log. Kandidat tetap perlu memahami dan mampu menjelaskan seluruh keputusan serta trade-off di atas.
+
+## Jika ada waktu lebih
+
+Tambahkan autentikasi, migrasi berversi, pagination task/log, penanganan konflik status yang lebih jelas di UI, dan tes interaksi browser. Untuk deployment terpisah, konfigurasi origin CORS dan URL API perlu disesuaikan dengan alamat frontend/backend produksi.
