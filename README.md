@@ -27,6 +27,8 @@ Prasyarat: Node.js 20+, npm, dan PostgreSQL (misalnya Neon).
 
 Frontend: http://localhost:5173. Backend: http://localhost:3001. Dalam mode development, Vite meneruskan `/api` ke Express. Untuk menjalankan secara terpisah, gunakan `npm run dev -w frontend` dan `npm run dev -w backend`.
 
+Jalankan satu instance backend dan frontend saja. Jika port `3001` atau `5173` sedang dipakai proses lama, hentikan proses tersebut sebelum menjalankan `npm run dev` kembali. Proses lama dapat membuat UI baru memanggil API lama dan menerima 404; script `dev` kini berhenti saat salah satu server gagal dimulai.
+
 Pemeriksaan: `npm run typecheck`, `npm run build`, dan `npm test -w backend`. Tes integrasi memakai database pada `DATABASE_URL`, membuat satu task uji, lalu menghapusnya secara *soft delete*. Tabel dan data lain tidak dihapus.
 
 ## Arsitektur
