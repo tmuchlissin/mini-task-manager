@@ -241,6 +241,7 @@ export function App() {
       setEditDescription(updated.description);
       await refresh();
       setLogs(await api<AuditLog[]>(`/api/tasks/${updated.id}/audit-logs`));
+      setSelected(null);
     } catch (cause) { setError(cause instanceof Error ? cause.message : "Failed to update task"); }
     finally { setBusy(false); }
   }
@@ -350,7 +351,7 @@ export function App() {
           <label htmlFor="edit-description">Description</label>
           <textarea id="edit-description" value={editDescription} onChange={(event) => setEditDescription(event.target.value)} maxLength={1000} rows={5} placeholder="Add task details..." />
           <p className="dialog-actor">Changes will be recorded as <strong>{actor}</strong>.</p>
-          <div className="dialog-actions"><button type="button" onClick={() => setSelected(null)}>Cancel</button><button type="submit" disabled={busy || (editTitle.trim() === selected.title && editDescription.trim() === selected.description)}>Save changes</button></div>
+          <div className="dialog-actions"><button type="button" onClick={() => setSelected(null)}>Cancel</button><button type="submit" disabled={busy}>Save changes</button></div>
         </form>}
         </section> : <aside className="history" aria-label="Task history" onClick={(event) => event.stopPropagation()}>
           <div className="history-heading"><div><p className="eyebrow">AUDIT LOG</p><h2>{selected.title}</h2><p>{selected.deletedAt ? "Task deleted" : `Status: ${labels[selected.status]}`}</p></div><button type="button" onClick={() => setSelected(null)} aria-label="Close history">×</button></div>
