@@ -253,11 +253,14 @@ export function App() {
 
       <section className="toolbar" aria-label="Create task">
         <form onSubmit={create}>
-          <label htmlFor="task-title">New task</label>
           <div className="form-row">
-            <div className="task-fields">
-              <input id="task-title" value={title} onChange={(event) => setTitle(event.target.value)} maxLength={120} placeholder="Task title" required />
-              <input aria-label="Task description" value={description} onChange={(event) => setDescription(event.target.value)} maxLength={1000} placeholder="Short description (optional)" />
+            <div className="field-group title-field">
+              <label htmlFor="task-title">Task title</label>
+              <input id="task-title" value={title} onChange={(event) => setTitle(event.target.value)} maxLength={120} placeholder="Prepare invoice" required />
+            </div>
+            <div className="field-group description-field">
+              <label htmlFor="task-description">Description</label>
+              <input id="task-description" value={description} onChange={(event) => setDescription(event.target.value)} maxLength={1000} placeholder="Add context (optional)" />
             </div>
             <button type="submit" disabled={busy || !actor}>Add task</button>
           </div>
