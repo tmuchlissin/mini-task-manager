@@ -74,7 +74,7 @@ input:focus, select:focus, textarea:focus { outline: 2px solid #35b7c6; outline-
 .card[draggable="true"]:active { cursor: grabbing; }
 .card h3 { font-size: 14px; font-weight: 700; line-height: 1.45; margin: 0 0 7px; overflow-wrap: anywhere; }
 .card > p, .empty { color: #757b85; font-size: 12px; margin: 0; }
-.card-description { display: -webkit-box; font-size: 13px !important; line-height: 1.45; margin-bottom: 9px !important; overflow: hidden; overflow-wrap: anywhere; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
+.card-description { display: -webkit-box; font-size: 13px !important; line-clamp: 2; line-height: 1.45; margin-bottom: 9px !important; overflow: hidden; overflow-wrap: anywhere; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
 .card-date { font-size: 11px !important; }
 .empty { padding: 12px 2px; }
 .card-actions { align-items: center; border-top: 1px solid #dde1e7; display: flex; gap: 12px; justify-content: space-between; margin-top: 15px; padding-top: 12px; }
