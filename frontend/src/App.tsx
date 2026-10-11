@@ -341,17 +341,22 @@ export function App() {
         </form>
       </section></div>}
 
-      {selected && <div className="overlay" onClick={() => setSelected(null)}><aside className="history" aria-label={panelMode === "edit" ? "Edit task" : "Task history"} onClick={(event) => event.stopPropagation()}>
-        <div className="history-heading"><div><p className="eyebrow">{panelMode === "edit" ? "EDIT TASK" : "AUDIT LOG"}</p><h2>{selected.title}</h2><p>{selected.deletedAt ? "Task deleted" : `Status: ${labels[selected.status]}`}</p></div><button type="button" onClick={() => setSelected(null)} aria-label="Close panel">×</button></div>
-        {panelMode === "edit" && !selected.deletedAt && <form className="edit-task" onSubmit={updateDetails}>
+      {selected && <div className={`overlay ${panelMode === "edit" ? "create-overlay" : ""}`} onClick={() => setSelected(null)}>
+        {panelMode === "edit" ? <section className="create-dialog" role="dialog" aria-modal="true" aria-labelledby="edit-task-title" onClick={(event) => event.stopPropagation()}>
+          <div className="dialog-heading"><div><p className="eyebrow">EDIT TASK</p><h2 id="edit-task-title">Update task details</h2></div><button type="button" onClick={() => setSelected(null)} aria-label="Close edit dialog">×</button></div>
+          {!selected.deletedAt && <form className="edit-task" onSubmit={updateDetails}>
           <label htmlFor="edit-title">Task title</label>
           <input id="edit-title" value={editTitle} onChange={(event) => setEditTitle(event.target.value)} maxLength={120} required />
           <label htmlFor="edit-description">Description</label>
           <textarea id="edit-description" value={editDescription} onChange={(event) => setEditDescription(event.target.value)} maxLength={1000} rows={5} placeholder="Add task details..." />
-          <button type="submit" disabled={busy || (editTitle.trim() === selected.title && editDescription.trim() === selected.description)}>Save changes</button>
+          <p className="dialog-actor">Changes will be recorded as <strong>{actor}</strong>.</p>
+          <div className="dialog-actions"><button type="button" onClick={() => setSelected(null)}>Cancel</button><button type="submit" disabled={busy || (editTitle.trim() === selected.title && editDescription.trim() === selected.description)}>Save changes</button></div>
         </form>}
-        {panelMode === "history" && <ol className="timeline">{logs.map((log) => <li key={log.id}><p><strong>{log.actor}</strong> {describe(log)}</p><time dateTime={log.occurredAt}>{new Date(log.occurredAt).toLocaleString("en-US", { dateStyle: "medium", timeStyle: "short" })}</time></li>)}</ol>}
-      </aside></div>}
+        </section> : <aside className="history" aria-label="Task history" onClick={(event) => event.stopPropagation()}>
+          <div className="history-heading"><div><p className="eyebrow">AUDIT LOG</p><h2>{selected.title}</h2><p>{selected.deletedAt ? "Task deleted" : `Status: ${labels[selected.status]}`}</p></div><button type="button" onClick={() => setSelected(null)} aria-label="Close history">×</button></div>
+          <ol className="timeline">{logs.map((log) => <li key={log.id}><p><strong>{log.actor}</strong> {describe(log)}</p><time dateTime={log.occurredAt}>{new Date(log.occurredAt).toLocaleString("en-US", { dateStyle: "medium", timeStyle: "short" })}</time></li>)}</ol>
+        </aside>}
+      </div>}
     </main>
   );
 }
