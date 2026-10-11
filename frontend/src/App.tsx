@@ -29,9 +29,9 @@ async function api<T>(url: string, options?: RequestInit): Promise<T> {
 }
 
 function describe(log: AuditLog): string {
-  if (log.action === "created") return `membuat task “${log.taskTitle}”`;
-  if (log.action === "deleted") return `menghapus task “${log.taskTitle}”`;
-  return `mengubah status dari ${labels[log.fromStatus!]} ke ${labels[log.toStatus!]}`;
+  if (log.action === "created") return `created task “${log.taskTitle}”`;
+  if (log.action === "deleted") return `deleted task “${log.taskTitle}”`;
+  return `changed the status from ${labels[log.fromStatus!]} to ${labels[log.toStatus!]}`;
 }
 
 export function App() {
@@ -181,7 +181,7 @@ export function App() {
   }
 
   function remove(task: Task) {
-    if (!window.confirm(`Hapus “${task.title}”? Riwayatnya tetap tersimpan.`)) return;
+    if (!window.confirm(`Delete “${task.title}”? Its history will be preserved.`)) return;
     void run(async () => {
       await api<void>(`/api/tasks/${task.id}`, { method: "DELETE", body: JSON.stringify({ actor }) });
       await refresh();
@@ -193,7 +193,7 @@ export function App() {
     setSelected(task);
     setLogs([]);
     try { setLogs(await api<AuditLog[]>(`/api/tasks/${task.id}/audit-logs`)); }
-    catch (cause) { setError(cause instanceof Error ? cause.message : "Gagal memuat riwayat"); }
+    catch (cause) { setError(cause instanceof Error ? cause.message : "Failed to load history"); }
   }
 
   const active = tasks.filter((task) => !task.deletedAt);
@@ -202,12 +202,12 @@ export function App() {
   return (
     <main>
       <header className="page-header">
-        <div><p className="eyebrow">INTERNAL WORKSPACE</p><h1>Mini Task Manager</h1><p>Kelola task dan lihat setiap perubahan dengan jelas.</p></div>
+        <div><p className="eyebrow">INTERNAL WORKSPACE</p><h1>Mini Task Manager</h1><p>Manage tasks and track every change clearly.</p></div>
         <div className="header-actions">
-          <span className="count">{active.length} task aktif</span>
+          <span className="count">{active.length} active {active.length === 1 ? "task" : "tasks"}</span>
           <button type="button" className="theme-toggle" onClick={() => setTheme(theme === "light" ? "dark" : "light")}
-            aria-label={theme === "light" ? "Aktifkan tema gelap" : "Aktifkan tema terang"}
-            title={theme === "light" ? "Aktifkan tema gelap" : "Aktifkan tema terang"} aria-pressed={theme === "dark"}>
+            aria-label={theme === "light" ? "Switch to dark theme" : "Switch to light theme"}
+            title={theme === "light" ? "Switch to dark theme" : "Switch to light theme"} aria-pressed={theme === "dark"}>
             {theme === "light" ? (
               <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M20.2 15.2A8.5 8.5 0 0 1 8.8 3.8a8.5 8.5 0 1 0 11.4 11.4Z" />
@@ -222,21 +222,21 @@ export function App() {
         </div>
       </header>
 
-      <section className="toolbar" aria-label="Buat task">
+      <section className="toolbar" aria-label="Create task">
         <form onSubmit={create}>
-          <label htmlFor="task-title">Task baru</label>
+          <label htmlFor="task-title">New task</label>
           <div className="form-row">
-            <input id="task-title" value={title} onChange={(event) => setTitle(event.target.value)} maxLength={120} placeholder="Contoh: Prepare Invoice" required />
-            <button type="submit" disabled={busy || !actor}>Tambah task</button>
+            <input id="task-title" value={title} onChange={(event) => setTitle(event.target.value)} maxLength={120} placeholder="Example: Prepare Invoice" required />
+            <button type="submit" disabled={busy || !actor}>Add task</button>
           </div>
         </form>
-        <div className="actor-control"><label htmlFor="actor">Bertindak sebagai</label><select id="actor" value={actor} onChange={(event) => setActor(event.target.value)} disabled={busy}>{actors.map((name) => <option key={name}>{name}</option>)}</select></div>
+        <div className="actor-control"><label htmlFor="actor">Acting as</label><select id="actor" value={actor} onChange={(event) => setActor(event.target.value)} disabled={busy}>{actors.map((name) => <option key={name}>{name}</option>)}</select></div>
       </section>
 
-      <p className="board-hint"><span className="desktop-hint">Geser kartu ke kolom berikutnya untuk mengubah status. </span><span className="mobile-hint">Gunakan tombol pada kartu untuk mengubah status. </span>Actor yang dipilih akan tercatat di riwayat.</p>
+      <p className="board-hint"><span className="desktop-hint">Drag a card to the next column to change its status. </span><span className="mobile-hint">Use the button on a card to change its status. </span>The selected user will appear in its history.</p>
 
-      {error && <p className="error" role="alert">{error} <button type="button" onClick={() => void refresh().catch((cause: Error) => setError(cause.message))}>Coba muat ulang</button></p>}
-      {loading ? <p>Memuat task...</p> : <section className="board" ref={boardRef} aria-label="Task board">
+      {error && <p className="error" role="alert">{error} <button type="button" onClick={() => void refresh().catch((cause: Error) => setError(cause.message))}>Try again</button></p>}
+      {loading ? <p>Loading tasks...</p> : <section className="board" ref={boardRef} aria-label="Task board">
         {statuses.map((status) => {
           const columnTasks = active.filter((task) => task.status === status);
           const draggingTask = tasks.find((task) => task.id === draggedId);
@@ -251,13 +251,13 @@ export function App() {
               onDragStart={(event) => startDrag(event, task)}
               onDrag={(event) => publishCursor(event, task)}
               onDragEnd={endDrag}>
-              <h3>{task.title}</h3><p>Dibuat {new Date(task.createdAt).toLocaleDateString("id-ID")}</p>
+              <h3>{task.title}</h3><p>Created {new Date(task.createdAt).toLocaleDateString("en-US")}</p>
               <div className="card-actions">
-                <button type="button" className="text-button" onClick={() => void openHistory(task)}>Riwayat</button>
-                {status !== "done" && <button type="button" onClick={() => advance(task)} disabled={busy}>Ke {labels[statuses[statuses.indexOf(status) + 1]]} →</button>}
-                <button type="button" className="delete-button" onClick={() => remove(task)} disabled={busy} aria-label={`Hapus ${task.title}`}>Hapus</button>
+                <button type="button" className="text-button" onClick={() => void openHistory(task)}>History</button>
+                {status !== "done" && <button type="button" onClick={() => advance(task)} disabled={busy}>Move to {labels[statuses[statuses.indexOf(status) + 1]]} →</button>}
+                <button type="button" className="delete-button" onClick={() => remove(task)} disabled={busy} aria-label={`Delete ${task.title}`}>Delete</button>
               </div>
-            </article>) : <p className="empty">Belum ada task</p>}</div>
+            </article>) : <p className="empty">No tasks yet</p>}</div>
           </div>;
         })}
         {liveCursors.map((cursor) => {
@@ -265,18 +265,18 @@ export function App() {
           const color = ["#4469ee", "#9b6be8", "#e47758"][Math.max(0, actors.indexOf(cursor.actor)) % 3];
           return <div className="live-cursor" key={cursor.clientId} style={{ left: `${cursor.x * 100}%`, top: `${cursor.y * 100}%` }}>
             <svg width="19" height="23" viewBox="0 0 19 23" aria-hidden="true"><path d="M1 1v18l4.5-4.5 3.5 7 3-1.5-3.5-7H17L1 1Z" fill={color} stroke="white" strokeWidth="1.5" /></svg>
-            <span style={{ backgroundColor: color }}>{cursor.actor}{task ? ` · ${task.title}` : " sedang memindahkan"}</span>
+            <span style={{ backgroundColor: color }}>{cursor.actor}{task ? ` · ${task.title}` : " is moving a task"}</span>
           </div>;
         })}
       </section>}
 
-      <section className="archive"><button type="button" className="archive-toggle" onClick={() => setShowArchived(!showArchived)} aria-expanded={showArchived}>{showArchived ? "Sembunyikan" : "Lihat"} task dihapus ({archived.length})</button>
-        {showArchived && <div className="archive-list">{archived.length ? archived.map((task) => <div key={task.id}><span>{task.title}</span><button type="button" className="text-button" onClick={() => void openHistory(task)}>Lihat riwayat</button></div>) : <p>Belum ada task yang dihapus.</p>}</div>}
+      <section className="archive"><button type="button" className="archive-toggle" onClick={() => setShowArchived(!showArchived)} aria-expanded={showArchived}>{showArchived ? "Hide" : "Show"} deleted tasks ({archived.length})</button>
+        {showArchived && <div className="archive-list">{archived.length ? archived.map((task) => <div key={task.id}><span>{task.title}</span><button type="button" className="text-button" onClick={() => void openHistory(task)}>View history</button></div>) : <p>No deleted tasks yet.</p>}</div>}
       </section>
 
-      {selected && <div className="overlay" onClick={() => setSelected(null)}><aside className="history" aria-label="Riwayat task" onClick={(event) => event.stopPropagation()}>
-        <div className="history-heading"><div><p className="eyebrow">AUDIT LOG</p><h2>{selected.title}</h2><p>{selected.deletedAt ? "Task dihapus" : `Status: ${labels[selected.status]}`}</p></div><button type="button" onClick={() => setSelected(null)} aria-label="Tutup riwayat">×</button></div>
-        <ol className="timeline">{logs.map((log) => <li key={log.id}><p><strong>{log.actor}</strong> {describe(log)}</p><time dateTime={log.occurredAt}>{new Date(log.occurredAt).toLocaleString("id-ID", { dateStyle: "medium", timeStyle: "short" })}</time></li>)}</ol>
+      {selected && <div className="overlay" onClick={() => setSelected(null)}><aside className="history" aria-label="Task history" onClick={(event) => event.stopPropagation()}>
+        <div className="history-heading"><div><p className="eyebrow">AUDIT LOG</p><h2>{selected.title}</h2><p>{selected.deletedAt ? "Task deleted" : `Status: ${labels[selected.status]}`}</p></div><button type="button" onClick={() => setSelected(null)} aria-label="Close history">×</button></div>
+        <ol className="timeline">{logs.map((log) => <li key={log.id}><p><strong>{log.actor}</strong> {describe(log)}</p><time dateTime={log.occurredAt}>{new Date(log.occurredAt).toLocaleString("en-US", { dateStyle: "medium", timeStyle: "short" })}</time></li>)}</ol>
       </aside></div>}
     </main>
   );
