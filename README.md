@@ -106,6 +106,14 @@ Browser React → API Express → PostgreSQL (tasks dan audit_logs)
 - Actor dipilih dari tiga nama yang sudah ditentukan karena assignment tidak meminta autentikasi.
 - Status hanya boleh bergerak mengikuti urutan `to_do → pending → in_progress → done`.
 - Task yang dihapus masih perlu dapat dilihat riwayatnya, sehingga penghapusan dilakukan secara soft delete.
+- Satu task memiliki satu audit log atau lebih, dan setiap log menyimpan actor, aksi, status sebelum/sesudah, snapshot judul/deskripsi, serta waktu kejadian.
+- Audit log ditampilkan dari yang paling lama ke yang paling baru agar alur perubahan mudah diikuti.
+- Pembuatan task, perubahan detail, perubahan status, dan penghapusan dianggap sebagai perubahan yang perlu dicatat.
+- Permintaan update membawa actor dari pilihan UI. Karena belum ada login, actor tersebut diperlakukan sebagai identitas simulasi.
+- Database yang dipakai adalah PostgreSQL yang kompatibel dengan Neon. Migrasi dijalankan dari `backend/schema.sql`.
+- Frontend dan backend dijalankan sebagai proses terpisah dan berkomunikasi melalui HTTP API.
+- Mode terang/gelap hanya merupakan preferensi UI dan disimpan di browser; preferensi tersebut tidak termasuk data bisnis.
+- Real-time yang diperlukan hanya perubahan board dan posisi kursor saat drag, bukan kolaborasi penuh seperti editor dokumen.
 
 ## Trade-off yang dibuat
 
@@ -116,6 +124,12 @@ Browser React → API Express → PostgreSQL (tasks dan audit_logs)
 - SSE dan presence disimpan di memory backend agar implementasinya sederhana. Ini cocok untuk satu instance, tetapi deployment multi-instance membutuhkan Redis atau pub/sub bersama.
 - PostgreSQL/Neon dipilih karena transaksi dapat menjaga task dan audit log tetap sinkron, dengan konsekuensi perlu mengelola koneksi dan migrasi database.
 - Drag-and-drop menjadi interaksi utama, dengan tombol status sebagai fallback untuk perangkat kecil atau browser yang tidak mendukung drag dengan nyaman.
+- Validasi dilakukan di backend sebagai sumber kebenaran, sedangkan validasi frontend hanya membantu memberikan feedback lebih cepat kepada pengguna.
+- Query SQL ditulis langsung menggunakan `pg` agar dependency dan abstraksi tetap sedikit. ORM dapat mempermudah project besar, tetapi belum diperlukan untuk scope ini.
+- Satu file route utama masih dipertahankan agar mudah dibaca untuk take-home. Jika endpoint bertambah, route, service, dan repository perlu dipisahkan berdasarkan fitur.
+- CORS saat ini sederhana untuk development. Deployment production perlu membatasi origin ke domain frontend yang resmi.
+- Tidak ada pagination, autentikasi, role, rate limiting, atau retry queue karena tidak diminta oleh assignment. Fitur-fitur tersebut menjadi kebutuhan lanjutan ketika jumlah user dan data meningkat.
+- Tes integrasi memakai database pada `DATABASE_URL`, sehingga environment testing perlu database terpisah agar data pengujian tidak bercampur dengan production.
 
 ## Jawaban pertanyaan take-home
 
