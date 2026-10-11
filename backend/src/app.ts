@@ -72,6 +72,50 @@ app.post("/api/tasks", route(async (request, response) => {
   } finally { client.release(); }
 }));
 
+app.put("/api/tasks/:id", route(async (request, response) => {
+  if (!validId(request, response)) return;
+  const title = typeof request.body?.title === "string" ? request.body.title.trim() : "";
+  const actor = request.body?.actor;
+  if (!title || title.length > 120 || !validActor(actor)) {
+    response.status(400).json({ error: "Title (1–120 characters) and a valid actor are required" });
+    return;
+  }
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+    const current = await client.query(
+      `SELECT id, title, status, created_at AS "createdAt", updated_at AS "updatedAt", deleted_at AS "deletedAt"
+       FROM tasks WHERE id = $1 FOR UPDATE`, [request.params.id]
+    );
+    if (!current.rowCount || current.rows[0].deletedAt) {
+      await client.query("ROLLBACK");
+      response.status(404).json({ error: "Task not found" });
+      return;
+    }
+    if (current.rows[0].title === title) {
+      await client.query("COMMIT");
+      response.json({ ...current.rows[0], unchanged: true });
+      return;
+    }
+    const updated = await client.query(
+      `UPDATE tasks SET title = $2, updated_at = now() WHERE id = $1
+       RETURNING id, title, status, created_at AS "createdAt", updated_at AS "updatedAt", deleted_at AS "deletedAt"`,
+      [request.params.id, title]
+    );
+    await client.query(
+      `INSERT INTO audit_logs(task_id, actor, action, previous_title, task_title)
+       VALUES ($1, $2, 'title_changed', $3, $4)`,
+      [request.params.id, actor, current.rows[0].title, title]
+    );
+    await client.query("COMMIT");
+    broadcastTaskChange();
+    response.json(updated.rows[0]);
+  } catch (error) {
+    await client.query("ROLLBACK");
+    throw error;
+  } finally { client.release(); }
+}));
+
 app.put("/api/tasks/:id/status", route(async (request, response) => {
   if (!validId(request, response)) return;
   const { status, actor } = request.body ?? {};
@@ -161,7 +205,7 @@ app.get("/api/tasks/:id/audit-logs", route(async (request, response) => {
   }
   const result = await pool.query(
     `SELECT id, task_id AS "taskId", actor, action, from_status AS "fromStatus",
-       to_status AS "toStatus", task_title AS "taskTitle", occurred_at AS "occurredAt"
+       to_status AS "toStatus", previous_title AS "previousTitle", task_title AS "taskTitle", occurred_at AS "occurredAt"
      FROM audit_logs WHERE task_id = $1 ORDER BY occurred_at ASC, id ASC`,
     [request.params.id]
   );

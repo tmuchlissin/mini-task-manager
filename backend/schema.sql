@@ -13,16 +13,31 @@ CREATE TABLE IF NOT EXISTS audit_logs (
   id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
   task_id uuid NOT NULL REFERENCES tasks(id) ON DELETE RESTRICT,
   actor text NOT NULL,
-  action text NOT NULL CHECK (action IN ('created', 'status_changed', 'deleted')),
+  action text NOT NULL CHECK (action IN ('created', 'title_changed', 'status_changed', 'deleted')),
   from_status text CHECK (from_status IS NULL OR from_status IN ('to_do', 'pending', 'in_progress', 'done')),
   to_status text CHECK (to_status IS NULL OR to_status IN ('to_do', 'pending', 'in_progress', 'done')),
+  previous_title text,
   task_title text NOT NULL,
   occurred_at timestamptz NOT NULL DEFAULT clock_timestamp(),
   CHECK (
     (action = 'created' AND from_status IS NULL AND to_status = 'to_do') OR
+    (action = 'title_changed' AND from_status IS NULL AND to_status IS NULL AND previous_title IS NOT NULL AND previous_title <> task_title) OR
     (action = 'status_changed' AND from_status IS NOT NULL AND to_status IS NOT NULL AND from_status <> to_status) OR
     (action = 'deleted' AND from_status IS NOT NULL AND to_status IS NULL)
   )
+);
+
+ALTER TABLE audit_logs ADD COLUMN IF NOT EXISTS previous_title text;
+ALTER TABLE audit_logs DROP CONSTRAINT IF EXISTS audit_logs_action_check;
+ALTER TABLE audit_logs DROP CONSTRAINT IF EXISTS audit_logs_check;
+ALTER TABLE audit_logs DROP CONSTRAINT IF EXISTS audit_logs_shape_check;
+ALTER TABLE audit_logs ADD CONSTRAINT audit_logs_action_check
+  CHECK (action IN ('created', 'title_changed', 'status_changed', 'deleted'));
+ALTER TABLE audit_logs ADD CONSTRAINT audit_logs_shape_check CHECK (
+  (action = 'created' AND from_status IS NULL AND to_status = 'to_do') OR
+  (action = 'title_changed' AND from_status IS NULL AND to_status IS NULL AND previous_title IS NOT NULL AND previous_title <> task_title) OR
+  (action = 'status_changed' AND from_status IS NOT NULL AND to_status IS NOT NULL AND from_status <> to_status) OR
+  (action = 'deleted' AND from_status IS NOT NULL AND to_status IS NULL)
 );
 
 CREATE INDEX IF NOT EXISTS audit_logs_task_order_idx ON audit_logs(task_id, occurred_at, id);

@@ -3,7 +3,7 @@ import { useEffect, useRef, useState, type DragEvent, type FormEvent } from "rea
 const statuses = ["to_do", "pending", "in_progress", "done"] as const;
 type Status = (typeof statuses)[number];
 type Task = { id: string; title: string; status: Status; createdAt: string; updatedAt: string; deletedAt: string | null };
-type AuditLog = { id: string; taskId: string; actor: string; action: "created" | "status_changed" | "deleted"; fromStatus: Status | null; toStatus: Status | null; taskTitle: string; occurredAt: string };
+type AuditLog = { id: string; taskId: string; actor: string; action: "created" | "title_changed" | "status_changed" | "deleted"; fromStatus: Status | null; toStatus: Status | null; previousTitle: string | null; taskTitle: string; occurredAt: string };
 type LiveCursor = { clientId: string; actor: string; taskId: string; x: number; y: number; sequence: number };
 const labels: Record<Status, string> = { to_do: "To Do", pending: "Pending", in_progress: "In Progress", done: "Done" };
 type Theme = "light" | "dark";
@@ -31,6 +31,7 @@ async function api<T>(url: string, options?: RequestInit): Promise<T> {
 function describe(log: AuditLog): string {
   if (log.action === "created") return `created task “${log.taskTitle}”`;
   if (log.action === "deleted") return `deleted task “${log.taskTitle}”`;
+  if (log.action === "title_changed") return `renamed “${log.previousTitle}” to “${log.taskTitle}”`;
   return `changed the status from ${labels[log.fromStatus!]} to ${labels[log.toStatus!]}`;
 }
 
@@ -41,6 +42,7 @@ export function App() {
   const [actor, setActor] = useState("");
   const [title, setTitle] = useState("");
   const [selected, setSelected] = useState<Task | null>(null);
+  const [editTitle, setEditTitle] = useState("");
   const [logs, setLogs] = useState<AuditLog[]>([]);
   const [showArchived, setShowArchived] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -191,9 +193,24 @@ export function App() {
 
   async function openHistory(task: Task) {
     setSelected(task);
+    setEditTitle(task.title);
     setLogs([]);
     try { setLogs(await api<AuditLog[]>(`/api/tasks/${task.id}/audit-logs`)); }
     catch (cause) { setError(cause instanceof Error ? cause.message : "Failed to load history"); }
+  }
+
+  async function updateTitle(event: FormEvent) {
+    event.preventDefault();
+    if (!selected || selected.deletedAt) return;
+    setBusy(true); setError("");
+    try {
+      const updated = await api<Task>(`/api/tasks/${selected.id}`, { method: "PUT", body: JSON.stringify({ title: editTitle, actor }) });
+      setSelected(updated);
+      setEditTitle(updated.title);
+      await refresh();
+      setLogs(await api<AuditLog[]>(`/api/tasks/${updated.id}/audit-logs`));
+    } catch (cause) { setError(cause instanceof Error ? cause.message : "Failed to update task"); }
+    finally { setBusy(false); }
   }
 
   const active = tasks.filter((task) => !task.deletedAt);
@@ -246,8 +263,10 @@ export function App() {
             onDragLeave={(event) => { if (!event.currentTarget.contains(event.relatedTarget as Node)) setOverStatus(null); }}
             onDrop={(event) => drop(event, status)}>
             <div className="column-heading"><h2>{labels[status]}</h2><span>{columnTasks.length}</span></div>
-            <div className="cards">{columnTasks.length ? columnTasks.map((task) => <article className={`card${draggedId === task.id ? " dragging" : ""}`} key={task.id}
+            <div className="cards">{columnTasks.length ? columnTasks.map((task) => <article className={`card${draggedId === task.id ? " dragging" : ""}`} key={task.id} tabIndex={0}
               draggable={!busy && status !== "done"}
+              onClick={(event) => { if (!(event.target as HTMLElement).closest("button")) void openHistory(task); }}
+              onKeyDown={(event) => { if ((event.key === "Enter" || event.key === " ") && event.target === event.currentTarget) { event.preventDefault(); void openHistory(task); } }}
               onDragStart={(event) => startDrag(event, task)}
               onDrag={(event) => publishCursor(event, task)}
               onDragEnd={endDrag}>
@@ -280,6 +299,10 @@ export function App() {
 
       {selected && <div className="overlay" onClick={() => setSelected(null)}><aside className="history" aria-label="Task history" onClick={(event) => event.stopPropagation()}>
         <div className="history-heading"><div><p className="eyebrow">AUDIT LOG</p><h2>{selected.title}</h2><p>{selected.deletedAt ? "Task deleted" : `Status: ${labels[selected.status]}`}</p></div><button type="button" onClick={() => setSelected(null)} aria-label="Close history">×</button></div>
+        {!selected.deletedAt && <form className="edit-task" onSubmit={updateTitle}>
+          <label htmlFor="edit-title">Task title</label>
+          <div><input id="edit-title" value={editTitle} onChange={(event) => setEditTitle(event.target.value)} maxLength={120} required /><button type="submit" disabled={busy || editTitle.trim() === selected.title}>Save</button></div>
+        </form>}
         <ol className="timeline">{logs.map((log) => <li key={log.id}><p><strong>{log.actor}</strong> {describe(log)}</p><time dateTime={log.occurredAt}>{new Date(log.occurredAt).toLocaleString("en-US", { dateStyle: "medium", timeStyle: "short" })}</time></li>)}</ol>
       </aside></div>}
     </main>
