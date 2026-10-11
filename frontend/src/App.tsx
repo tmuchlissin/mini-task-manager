@@ -201,7 +201,7 @@ export function App() {
         <div className="actor-control"><label htmlFor="actor">Bertindak sebagai</label><select id="actor" value={actor} onChange={(event) => setActor(event.target.value)} disabled={busy}>{actors.map((name) => <option key={name}>{name}</option>)}</select></div>
       </section>
 
-      <p className="board-hint">Geser kartu ke kolom berikutnya untuk mengubah status. Actor yang dipilih akan tercatat di riwayat.</p>
+      <p className="board-hint"><span className="desktop-hint">Geser kartu ke kolom berikutnya untuk mengubah status. </span><span className="mobile-hint">Gunakan tombol pada kartu untuk mengubah status. </span>Actor yang dipilih akan tercatat di riwayat.</p>
 
       {error && <p className="error" role="alert">{error} <button type="button" onClick={() => void refresh().catch((cause: Error) => setError(cause.message))}>Coba muat ulang</button></p>}
       {loading ? <p>Memuat task...</p> : <section className="board" ref={boardRef} aria-label="Task board">
