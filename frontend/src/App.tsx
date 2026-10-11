@@ -72,6 +72,16 @@ export function App() {
     catch { /* The selected theme still applies for this session. */ }
   }, [theme]);
 
+  useEffect(() => {
+    function closeOverlays(event: KeyboardEvent) {
+      if (event.key !== "Escape") return;
+      if (showCreate) setShowCreate(false);
+      else if (selected) setSelected(null);
+    }
+    window.addEventListener("keydown", closeOverlays);
+    return () => window.removeEventListener("keydown", closeOverlays);
+  }, [selected, showCreate]);
+
   async function refresh() {
     const rows = await api<Task[]>("/api/tasks?includeDeleted=true");
     setTasks(rows);
