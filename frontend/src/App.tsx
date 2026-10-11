@@ -262,7 +262,7 @@ export function App() {
         })}
         {liveCursors.map((cursor) => {
           const task = tasks.find((item) => item.id === cursor.taskId);
-          const color = ["#4469ee", "#9b6be8", "#e47758"][Math.max(0, actors.indexOf(cursor.actor)) % 3];
+          const color = ["#0a8eaa", "#7047bd", "#009f93"][Math.max(0, actors.indexOf(cursor.actor)) % 3];
           return <div className="live-cursor" key={cursor.clientId} style={{ left: `${cursor.x * 100}%`, top: `${cursor.y * 100}%` }}>
             <svg width="19" height="23" viewBox="0 0 19 23" aria-hidden="true"><path d="M1 1v18l4.5-4.5 3.5 7 3-1.5-3.5-7H17L1 1Z" fill={color} stroke="white" strokeWidth="1.5" /></svg>
             <span style={{ backgroundColor: color }}>{cursor.actor}{task ? ` · ${task.title}` : " is moving a task"}</span>
