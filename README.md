@@ -2,6 +2,8 @@
 
 Task board sederhana untuk tim internal. Task bergerak berurutan melalui **To Do → Pending → In Progress → Done**. Setiap perubahan tercatat bersama actor dan waktu kejadian.
 
+Untuk panduan presentasi dan penjelasan kode dari dasar, lihat [PRESENTATION_GUIDE.md](PRESENTATION_GUIDE.md).
+
 ## Cara Menjalankan Aplikasi (Lokal)
 
 Prasyarat: Node.js 20+, npm, dan PostgreSQL (misalnya Neon).
@@ -119,18 +121,18 @@ Browser React → API Express → PostgreSQL (tasks dan audit_logs)
 
 Trade-off adalah pilihan yang memberikan keuntungan tertentu, tetapi juga memiliki konsekuensi. Pilihan yang diambil dalam project ini adalah:
 
-| Pilihan yang diambil                                        | Keuntungan                                                                     | Konsekuensi                                                                                               |
-| ----------------------------------------------------------- | ------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------- |
-| Actor menggunakan tiga nama hardcoded                       | Implementasi cepat dan tidak perlu membuat login.                              | Actor belum membuktikan identitas pengguna sebenarnya. Production membutuhkan autentikasi.                |
-| Task menggunakan soft delete                                | Task dan audit log tetap bisa dilihat setelah task dihapus.                    | Data yang sudah tidak aktif tetap tersimpan dan mungkin membutuhkan pembersihan berkala.                  |
-| Status hanya boleh maju satu tahap                          | Alur assignment selalu konsisten dan tidak dapat melompati proses.             | User tidak dapat langsung memindahkan task ke status mana pun.                                            |
-| Update yang sama dianggap idempotent                        | Request berulang tidak membuat audit log duplikat.                             | Sistem tidak mencatat request yang sebenarnya tidak mengubah data.                                        |
-| Presence menggunakan SSE dan memory backend                 | Real-time sederhana tanpa Redis atau layanan tambahan.                         | Data hilang saat server restart dan tidak cocok untuk banyak instance backend.                            |
-| Menggunakan PostgreSQL/Neon                                 | Transaksi dapat menjaga perubahan task dan audit log tetap sinkron.            | Perlu mengelola koneksi database dan menjalankan migrasi.                                                 |
-| Query SQL ditulis langsung menggunakan `pg`                 | Dependency sedikit dan query serta transaksi terlihat jelas.                   | Query harus dirawat manual; belum mendapat kemudahan ORM.                                                 |
-| Drag-and-drop menjadi interaksi utama                       | Board terasa natural seperti aplikasi kanban.                                  | Perangkat tertentu kurang nyaman memakai drag-and-drop, sehingga tersedia tombol status sebagai fallback. |
-| Validasi utama dilakukan di backend                         | Backend menjadi sumber kebenaran meskipun request berasal dari client berbeda. | Feedback awal di UI tidak selengkap jika semua validasi dilakukan secara lokal.                           |
-| Route masih sederhana dalam `app.ts`                        | Mudah dibaca dan sesuai scope take-home.                                       | Jika fitur bertambah, route, service, dan repository perlu dipisahkan.                                    |
+| Pilihan yang diambil                                        | Keuntungan                                                                     | Konsekuensi                                                                                                                                                                                                  |
+| ----------------------------------------------------------- | ------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Actor menggunakan tiga nama hardcoded                       | Implementasi cepat dan tidak perlu membuat login.                              | Actor belum membuktikan identitas pengguna sebenarnya. Production membutuhkan autentikasi.                                                                                                                   |
+| Task menggunakan soft delete                                | Task dan audit log tetap bisa dilihat setelah task dihapus.                    | Data yang sudah tidak aktif tetap tersimpan dan mungkin membutuhkan pembersihan berkala.                                                                                                                     |
+| Status hanya boleh maju satu tahap                          | Alur assignment selalu konsisten dan tidak dapat melompati proses.             | User tidak dapat langsung memindahkan task ke status mana pun.                                                                                                                                               |
+| Update yang sama dianggap idempotent                        | Request berulang tidak membuat audit log duplikat.                             | Sistem tidak mencatat request yang sebenarnya tidak mengubah data.                                                                                                                                           |
+| Presence menggunakan SSE dan memory backend                 | Real-time sederhana tanpa Redis atau layanan tambahan.                         | Data hilang saat server restart dan tidak cocok untuk banyak instance backend.                                                                                                                               |
+| Menggunakan PostgreSQL/Neon                                 | Transaksi dapat menjaga perubahan task dan audit log tetap sinkron.            | Perlu mengelola koneksi database dan menjalankan migrasi.                                                                                                                                                    |
+| Query SQL ditulis langsung menggunakan `pg`                 | Dependency sedikit dan query serta transaksi terlihat jelas.                   | Query harus dirawat manual; belum mendapat kemudahan ORM.                                                                                                                                                    |
+| Drag-and-drop menjadi interaksi utama                       | Board terasa natural seperti aplikasi kanban.                                  | Perangkat tertentu kurang nyaman memakai drag-and-drop, sehingga tersedia tombol status sebagai fallback.                                                                                                    |
+| Validasi utama dilakukan di backend                         | Backend menjadi sumber kebenaran meskipun request berasal dari client berbeda. | Feedback awal di UI tidak selengkap jika semua validasi dilakukan secara lokal.                                                                                                                              |
+| Route masih sederhana dalam `app.ts`                        | Mudah dibaca dan sesuai scope take-home.                                       | Jika fitur bertambah, route, service, dan repository perlu dipisahkan.                                                                                                                                       |
 | Belum ada pagination, role, rate limiting, atau retry queue | Scope tetap kecil dan fokus pada requirement utama.                            | Pagination dibutuhkan saat data sangat banyak; role dan rate limiting dibutuhkan saat user bertambah; retry queue dibutuhkan jika ada pekerjaan background atau integrasi eksternal yang perlu dicoba ulang. |
 
 ## Jawaban pertanyaan take-home-test
@@ -149,4 +151,4 @@ Trade-off adalah pilihan yang memberikan keuntungan tertentu, tetapi juga memili
 
 **Pertanyaan:** Bagaimana AI digunakan?
 
-**Jawaban:** AI membantu menyusun kerangka workspace, API, skema SQL, UI board, dokumentasi, dan tes. Solusi divalidasi dengan pemeriksaan TypeScript, build, migrasi database, serta tes integrasi terhadap Neon untuk transisi status, idempotensi, soft delete, dan sifat append-only audit log. Kandidat tetap perlu memahami dan mampu menjelaskan seluruh keputusan serta trade-off di atas.
+**Jawaban:** AI membantu menyusun kerangka workspace, API, skema SQL, UI board, dokumentasi, dan tes. Solusi divalidasi dengan pemeriksaan TypeScript, build, migrasi database, serta tes integrasi terhadap Neon untuk transisi status, idempotensi, soft delete, dan sifat append-only audit log.
