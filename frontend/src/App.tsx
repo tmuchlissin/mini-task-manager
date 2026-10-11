@@ -7,6 +7,8 @@ type AuditLog = { id: string; taskId: string; actor: string; action: "created" |
 type LiveCursor = { clientId: string; actor: string; taskId: string; x: number; y: number; sequence: number };
 const labels: Record<Status, string> = { to_do: "To Do", pending: "Pending", in_progress: "In Progress", done: "Done" };
 type Theme = "light" | "dark";
+const apiBaseUrl = ((import.meta as ImportMeta & { env?: { VITE_API_URL?: string } }).env?.VITE_API_URL ?? "").replace(/\/$/, "");
+const apiUrl = (path: string) => `${apiBaseUrl}${path}`;
 
 function initialTheme(): Theme {
   try {
@@ -17,7 +19,7 @@ function initialTheme(): Theme {
 }
 
 async function api<T>(url: string, options?: RequestInit): Promise<T> {
-  const response = await fetch(url, {
+  const response = await fetch(apiUrl(url), {
     ...options,
     headers: { "Content-Type": "application/json", ...options?.headers }
   });
@@ -97,7 +99,7 @@ export function App() {
   }, []);
 
   useEffect(() => {
-    const stream = new EventSource("/api/presence");
+    const stream = new EventSource(apiUrl("/api/presence"));
     stream.addEventListener("cursors", (event) => {
       const cursors = JSON.parse(event.data) as LiveCursor[];
       setLiveCursors(cursors.filter((cursor) => cursor.clientId !== clientId.current));
@@ -115,7 +117,7 @@ export function App() {
   }, []);
 
   function stopPresence() {
-    void fetch("/api/presence", {
+    void fetch(apiUrl("/api/presence"), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ clientId: clientId.current, active: false, sequence: ++cursorSequence.current }),
@@ -132,7 +134,7 @@ export function App() {
     const rect = board.getBoundingClientRect();
     const x = Math.max(0, Math.min(1, (event.clientX - rect.left) / rect.width));
     const y = Math.max(0, Math.min(1, (event.clientY - rect.top) / rect.height));
-    void fetch("/api/presence", {
+    void fetch(apiUrl("/api/presence"), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ clientId: clientId.current, actor, taskId: task.id, x, y, sequence: ++cursorSequence.current })
