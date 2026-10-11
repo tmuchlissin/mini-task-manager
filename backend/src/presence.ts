@@ -54,6 +54,7 @@ const cleanup = setInterval(() => {
 }, 1_000);
 cleanup.unref();
 
+// GET /api/presence — opens an SSE stream for live cursors and task updates.
 presenceRouter.get("/", (request, response) => {
   response.set({
     "Content-Type": "text/event-stream",
@@ -67,6 +68,7 @@ presenceRouter.get("/", (request, response) => {
   request.on("close", () => subscribers.delete(response));
 });
 
+// POST /api/presence — publishes a cursor position or ends a drag session.
 presenceRouter.post("/", (request, response) => {
   const { clientId, actor, taskId, x, y, active, sequence } = request.body ?? {};
   if (typeof clientId !== "string" || !/^[0-9a-f-]{36}$/i.test(clientId)) {

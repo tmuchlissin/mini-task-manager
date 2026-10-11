@@ -36,6 +36,7 @@ function validId(request: Request, response: Response): boolean {
   return false;
 }
 
+// GET /api/health — confirms the API process and database are available.
 app.get(
   "/api/health",
   route(async (_request, response) => {
@@ -44,10 +45,12 @@ app.get(
   }),
 );
 
+// GET /api/actors — returns the predefined actors available in the UI.
 app.get("/api/actors", (_request, response) => {
   response.json(actors);
 });
 
+// GET /api/tasks — lists active tasks, or deleted tasks when requested.
 app.get(
   "/api/tasks",
   route(async (request, response) => {
@@ -62,6 +65,7 @@ app.get(
   }),
 );
 
+// POST /api/tasks — creates a task and its initial audit entry.
 app.post(
   "/api/tasks",
   route(async (request, response) => {
@@ -112,6 +116,7 @@ app.post(
   }),
 );
 
+// PUT /api/tasks/:id — updates the task title and description.
 app.put(
   "/api/tasks/:id",
   route(async (request, response) => {
@@ -188,6 +193,7 @@ app.put(
   }),
 );
 
+// PUT /api/tasks/:id/status — advances a task by one valid status step.
 app.put(
   "/api/tasks/:id/status",
   route(async (request, response) => {
@@ -252,6 +258,7 @@ app.put(
   }),
 );
 
+// DELETE /api/tasks/:id — soft-deletes a task and records the action.
 app.delete(
   "/api/tasks/:id",
   route(async (request, response) => {
@@ -295,6 +302,7 @@ app.delete(
   }),
 );
 
+// GET /api/tasks/:id/audit-logs — returns immutable chronological history.
 app.get(
   "/api/tasks/:id/audit-logs",
   route(async (request, response) => {
@@ -317,6 +325,7 @@ app.get(
   }),
 );
 
+// Final error middleware converts unexpected failures into a safe 500 response.
 app.use(
   (
     error: Error,
