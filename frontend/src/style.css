@@ -14,7 +14,7 @@ h1 { font-size: clamp(28px, 3vw, 38px); letter-spacing: -.04em; margin: 0 0 7px;
 .theme-toggle { align-items: center; background: white; border: 1px solid #d6dfec; border-radius: 10px; color: #315caa; display: inline-flex; height: 40px; justify-content: center; padding: 0; width: 40px; }
 .theme-toggle:hover { border-color: #8db1ed; }
 .theme-toggle:focus-visible { outline: 2px solid #3168cb; outline-offset: 2px; }
-.theme-toggle span { font-size: 18px; line-height: 1; }
+.theme-toggle svg { height: 21px; width: 21px; }
 .toolbar { align-items: end; background: white; border: 1px solid #e4eaf3; border-radius: 14px; box-shadow: 0 5px 24px #1d3b7010; display: flex; gap: 24px; justify-content: space-between; margin-bottom: 28px; padding: 20px; }
 .toolbar form { flex: 1; max-width: 700px; min-width: 0; }
 .toolbar label { color: #52627c; display: block; font-size: 12px; font-weight: 700; margin-bottom: 8px; }

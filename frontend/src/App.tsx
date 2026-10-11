@@ -208,7 +208,16 @@ export function App() {
           <button type="button" className="theme-toggle" onClick={() => setTheme(theme === "light" ? "dark" : "light")}
             aria-label={theme === "light" ? "Aktifkan tema gelap" : "Aktifkan tema terang"}
             title={theme === "light" ? "Aktifkan tema gelap" : "Aktifkan tema terang"} aria-pressed={theme === "dark"}>
-            <span aria-hidden="true">{theme === "light" ? "☾" : "☀"}</span>
+            {theme === "light" ? (
+              <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M20.2 15.2A8.5 8.5 0 0 1 8.8 3.8a8.5 8.5 0 1 0 11.4 11.4Z" />
+              </svg>
+            ) : (
+              <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="4" />
+                <path d="M12 2v2m0 16v2M4.93 4.93l1.42 1.42m11.3 11.3 1.42 1.42M2 12h2m16 0h2M4.93 19.07l1.42-1.42m11.3-11.3 1.42-1.42" />
+              </svg>
+            )}
           </button>
         </div>
       </header>
