@@ -19,7 +19,10 @@ input { flex: 1; min-width: 120px; }
 select { min-width: 170px; }
 input:focus, select:focus { outline: 2px solid #93b5f2; outline-offset: 1px; }
 .form-row button, .card-actions button:not(.text-button):not(.delete-button) { background: #3168cb; border: 1px solid #3168cb; border-radius: 8px; color: white; font-size: 13px; font-weight: 700; padding: 9px 13px; white-space: nowrap; }
-.board { display: grid; grid-template-columns: repeat(4, minmax(235px, 1fr)); gap: 16px; overflow-x: auto; }
+.board { display: grid; grid-template-columns: repeat(4, minmax(235px, 1fr)); gap: 16px; overflow-x: auto; position: relative; }
+.live-cursor { align-items: flex-start; display: flex; filter: drop-shadow(0 2px 4px #1b365b38); gap: 2px; pointer-events: none; position: absolute; transition: left 70ms linear, top 70ms linear; z-index: 5; }
+.live-cursor svg { flex: none; }
+.live-cursor span { border: 2px solid white; border-radius: 999px; color: white; font-size: 11px; font-weight: 700; max-width: 180px; overflow: hidden; padding: 3px 8px; text-overflow: ellipsis; white-space: nowrap; }
 .board-hint { color: #6b7890; font-size: 13px; margin: -12px 0 18px; }
 .column { background: #edf1f7; border: 1px solid #e3e9f2; border-radius: 12px; min-height: 330px; padding: 15px; }
 .column.drop-eligible { border: 2px dashed #80a8e8; padding: 14px; }

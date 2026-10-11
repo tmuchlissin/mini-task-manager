@@ -1,9 +1,10 @@
-import { useEffect, useState, type DragEvent, type FormEvent } from "react";
+import { useEffect, useRef, useState, type DragEvent, type FormEvent } from "react";
 
 const statuses = ["to_do", "pending", "in_progress", "done"] as const;
 type Status = (typeof statuses)[number];
 type Task = { id: string; title: string; status: Status; createdAt: string; updatedAt: string; deletedAt: string | null };
 type AuditLog = { id: string; taskId: string; actor: string; action: "created" | "status_changed" | "deleted"; fromStatus: Status | null; toStatus: Status | null; taskTitle: string; occurredAt: string };
+type LiveCursor = { clientId: string; actor: string; taskId: string; x: number; y: number; sequence: number };
 const labels: Record<Status, string> = { to_do: "To Do", pending: "Pending", in_progress: "In Progress", done: "Done" };
 
 async function api<T>(url: string, options?: RequestInit): Promise<T> {
@@ -37,11 +38,16 @@ export function App() {
   const [error, setError] = useState("");
   const [draggedId, setDraggedId] = useState<string | null>(null);
   const [overStatus, setOverStatus] = useState<Status | null>(null);
+  const [liveCursors, setLiveCursors] = useState<LiveCursor[]>([]);
+  const boardRef = useRef<HTMLElement>(null);
+  const clientId = useRef(crypto.randomUUID());
+  const lastCursorUpdate = useRef(0);
+  const cursorSequence = useRef(0);
 
   async function refresh() {
     const rows = await api<Task[]>("/api/tasks?includeDeleted=true");
     setTasks(rows);
-    if (selected) setSelected(rows.find((task) => task.id === selected.id) ?? null);
+    setSelected((current) => current ? rows.find((task) => task.id === current.id) ?? null : null);
   }
 
   useEffect(() => {
@@ -50,6 +56,49 @@ export function App() {
       .catch((cause: Error) => setError(cause.message))
       .finally(() => setLoading(false));
   }, []);
+
+  useEffect(() => {
+    const stream = new EventSource("/api/presence");
+    stream.addEventListener("cursors", (event) => {
+      const cursors = JSON.parse(event.data) as LiveCursor[];
+      setLiveCursors(cursors.filter((cursor) => cursor.clientId !== clientId.current));
+    });
+    stream.addEventListener("tasks-changed", () => {
+      void refresh().catch((cause: Error) => setError(cause.message));
+    });
+    const stopOnLeave = () => stopPresence();
+    window.addEventListener("pagehide", stopOnLeave);
+    return () => {
+      stream.close();
+      window.removeEventListener("pagehide", stopOnLeave);
+      stopPresence();
+    };
+  }, []);
+
+  function stopPresence() {
+    void fetch("/api/presence", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ clientId: clientId.current, active: false, sequence: ++cursorSequence.current }),
+      keepalive: true
+    }).catch(() => {});
+  }
+
+  function publishCursor(event: DragEvent<HTMLElement>, task: Task, force = false) {
+    const board = boardRef.current;
+    if (!board || event.clientX <= 0 || event.clientY <= 0) return;
+    const now = Date.now();
+    if (!force && now - lastCursorUpdate.current < 80) return;
+    lastCursorUpdate.current = now;
+    const rect = board.getBoundingClientRect();
+    const x = Math.max(0, Math.min(1, (event.clientX - rect.left) / rect.width));
+    const y = Math.max(0, Math.min(1, (event.clientY - rect.top) / rect.height));
+    void fetch("/api/presence", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ clientId: clientId.current, actor, taskId: task.id, x, y, sequence: ++cursorSequence.current })
+    }).catch(() => {});
+  }
 
   async function run(work: () => Promise<void>) {
     setBusy(true);
@@ -89,15 +138,18 @@ export function App() {
     event.dataTransfer.setData("application/x-mini-task-id", task.id);
     event.dataTransfer.effectAllowed = "move";
     setDraggedId(task.id);
+    publishCursor(event, task, true);
   }
 
   function endDrag() {
     setDraggedId(null);
     setOverStatus(null);
+    stopPresence();
   }
 
   function dragOver(event: DragEvent<HTMLElement>, target: Status) {
     const task = tasks.find((item) => item.id === draggedId);
+    if (task) publishCursor(event, task);
     if (!canDrop(task, target)) return;
     event.preventDefault();
     event.dataTransfer.dropEffect = "move";
@@ -152,7 +204,7 @@ export function App() {
       <p className="board-hint">Geser kartu ke kolom berikutnya untuk mengubah status. Actor yang dipilih akan tercatat di riwayat.</p>
 
       {error && <p className="error" role="alert">{error} <button type="button" onClick={() => void refresh().catch((cause: Error) => setError(cause.message))}>Coba muat ulang</button></p>}
-      {loading ? <p>Memuat task...</p> : <section className="board" aria-label="Task board">
+      {loading ? <p>Memuat task...</p> : <section className="board" ref={boardRef} aria-label="Task board">
         {statuses.map((status) => {
           const columnTasks = active.filter((task) => task.status === status);
           const draggingTask = tasks.find((task) => task.id === draggedId);
@@ -165,6 +217,7 @@ export function App() {
             <div className="cards">{columnTasks.length ? columnTasks.map((task) => <article className={`card${draggedId === task.id ? " dragging" : ""}`} key={task.id}
               draggable={!busy && status !== "done"}
               onDragStart={(event) => startDrag(event, task)}
+              onDrag={(event) => publishCursor(event, task)}
               onDragEnd={endDrag}>
               <h3>{task.title}</h3><p>Dibuat {new Date(task.createdAt).toLocaleDateString("id-ID")}</p>
               <div className="card-actions">
@@ -173,6 +226,14 @@ export function App() {
                 <button type="button" className="delete-button" onClick={() => remove(task)} disabled={busy} aria-label={`Hapus ${task.title}`}>Hapus</button>
               </div>
             </article>) : <p className="empty">Belum ada task</p>}</div>
+          </div>;
+        })}
+        {liveCursors.map((cursor) => {
+          const task = tasks.find((item) => item.id === cursor.taskId);
+          const color = ["#4469ee", "#9b6be8", "#e47758"][Math.max(0, actors.indexOf(cursor.actor)) % 3];
+          return <div className="live-cursor" key={cursor.clientId} style={{ left: `${cursor.x * 100}%`, top: `${cursor.y * 100}%` }}>
+            <svg width="19" height="23" viewBox="0 0 19 23" aria-hidden="true"><path d="M1 1v18l4.5-4.5 3.5 7 3-1.5-3.5-7H17L1 1Z" fill={color} stroke="white" strokeWidth="1.5" /></svg>
+            <span style={{ backgroundColor: color }}>{cursor.actor}{task ? ` · ${task.title}` : " sedang memindahkan"}</span>
           </div>;
         })}
       </section>}

@@ -1,13 +1,14 @@
 import cors from "cors";
 import express, { type NextFunction, type Request, type Response } from "express";
 import { pool } from "./db.js";
+import { broadcastTaskChange, presenceRouter } from "./presence.js";
+import { actors, statuses } from "./constants.js";
 
 export const app = express();
 app.use(cors());
 app.use(express.json());
+app.use("/api/presence", presenceRouter);
 
-const statuses = ["to_do", "pending", "in_progress", "done"] as const;
-const actors = ["john.doe", "jane.smith", "alex.lee"] as const;
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 type AsyncRoute = (request: Request, response: Response) => Promise<void>;
@@ -63,6 +64,7 @@ app.post("/api/tasks", route(async (request, response) => {
       [task.rows[0].id, actor, title]
     );
     await client.query("COMMIT");
+    broadcastTaskChange();
     response.status(201).json(task.rows[0]);
   } catch (error) {
     await client.query("ROLLBACK");
@@ -110,6 +112,7 @@ app.put("/api/tasks/:id/status", route(async (request, response) => {
       [task.id, actor, task.status, status, task.title]
     );
     await client.query("COMMIT");
+    broadcastTaskChange();
     response.json(updated.rows[0]);
   } catch (error) {
     await client.query("ROLLBACK");
@@ -141,6 +144,7 @@ app.delete("/api/tasks/:id", route(async (request, response) => {
       [task.id, actor, task.status, task.title]
     );
     await client.query("COMMIT");
+    broadcastTaskChange();
     response.status(204).send();
   } catch (error) {
     await client.query("ROLLBACK");
