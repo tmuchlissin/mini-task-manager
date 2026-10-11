@@ -254,7 +254,6 @@ export function App() {
       </header>
 
       <div className="board-toolbar">
-        <p className="board-hint"><span className="desktop-hint">Drag a card to the next column to change its status. </span><span className="mobile-hint">Use the button on a card to change its status. </span>The selected user will appear in its history.</p>
         <div className="board-controls">
           <div className="header-actor">
             <label htmlFor="actor">Acting as</label>
@@ -262,6 +261,7 @@ export function App() {
           </div>
           <button type="button" className="create-trigger" onClick={() => setShowCreate(true)} disabled={!actor}><span aria-hidden="true">+</span> New task</button>
         </div>
+        <p className="board-hint"><span className="desktop-hint">Drag a card to the next column to change its status. </span><span className="mobile-hint">Use the button on a card to change its status. </span>The selected user will appear in its history.</p>
       </div>
 
       {error && <p className="error" role="alert">{error} <button type="button" onClick={() => void refresh().catch((cause: Error) => setError(cause.message))}>Try again</button></p>}
