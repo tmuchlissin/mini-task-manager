@@ -2,23 +2,32 @@
 
 Task board sederhana untuk tim internal. Task bergerak berurutan melalui **To Do → Pending → In Progress → Done**. Setiap perubahan tercatat bersama actor dan waktu kejadian.
 
-## Menjalankan aplikasi
+## Menjalankan aplikasi secara lokal
 
 Prasyarat: Node.js 20+, npm, dan PostgreSQL (misalnya Neon).
 
-1. Buat `backend/.env`:
+1. Salin file contoh environment:
+
+   ```bash
+   cp backend/.env.example backend/.env
+   cp frontend/.env.example frontend/.env
+   ```
+
+   Isi `backend/.env` dengan koneksi PostgreSQL/Neon:
 
    ```env
    DATABASE_URL=postgresql://user:password@host/database?sslmode=require
    PORT=3001
    ```
 
-   Buat `frontend/.env` dengan URL backend tanpa slash di akhir:
+   Isi `frontend/.env` dengan URL backend tanpa slash di akhir:
 
    ```env
    VITE_API_URL=http://localhost:3001
    VITE_PORT=5173
    ```
+
+   `VITE_API_URL` dan `VITE_PORT` dibaca oleh Vite saat startup/build. `DATABASE_URL` dan `PORT` dibaca oleh Express.
 
 2. Pasang dependency dan siapkan tabel:
 
@@ -35,9 +44,32 @@ Prasyarat: Node.js 20+, npm, dan PostgreSQL (misalnya Neon).
 
 Frontend berjalan pada port `VITE_PORT`, backend pada port `PORT`. Vite meneruskan `/api` ke URL pada `VITE_API_URL`. Untuk production, ganti `VITE_API_URL` dengan URL backend production. Untuk menjalankan secara terpisah, gunakan `npm run dev -w frontend` dan `npm run dev -w backend`.
 
-Jalankan satu instance backend dan frontend saja. Jika port `3001` atau `5173` sedang dipakai proses lama, hentikan proses tersebut sebelum menjalankan `npm run dev` kembali. Proses lama dapat membuat UI baru memanggil API lama dan menerima 404; script `dev` kini berhenti saat salah satu server gagal dimulai.
+Jalankan satu instance backend dan frontend saja. Jika port yang dipilih sedang dipakai proses lama, hentikan proses tersebut sebelum menjalankan `npm run dev` kembali. Script root memakai `concurrently --kill-others-on-fail`, sehingga proses lain dihentikan jika salah satu server gagal dimulai.
 
-Pemeriksaan: `npm run typecheck`, `npm run build`, dan `npm test -w backend`. Tes integrasi memakai database pada `DATABASE_URL`, membuat satu task uji, lalu menghapusnya secara *soft delete*. Tabel dan data lain tidak dihapus.
+Pemeriksaan:
+
+```bash
+npm run typecheck
+npm run build
+npm test -w backend
+```
+
+Tes integrasi memakai database pada `DATABASE_URL`, membuat task uji dengan prefix `Integration test`, lalu menghapusnya secara *soft delete*. Tabel dan data lain tidak dihapus.
+
+## Struktur proyek
+
+```text
+backend/
+  src/app.ts       # route HTTP dan validasi request
+  src/db.ts        # connection pool PostgreSQL
+  src/migrate.ts   # menjalankan schema.sql
+  schema.sql       # tabel, index, constraint, dan trigger audit
+  test/             # tes integrasi API
+frontend/
+  src/App.tsx      # state, request API, board, modal, dan drag-and-drop
+  src/style.css    # tema responsif light/dark
+  vite.config.ts   # port dan proxy dari environment
+```
 
 ## Arsitektur
 
@@ -46,7 +78,7 @@ React (frontend/src/App.tsx) → Express (backend/src/app.ts) → PostgreSQL
                                                         ↳ tasks + audit_logs
 ```
 
-Frontend menampilkan empat kolom, form pembuatan, dropdown actor, drag-and-drop atau tombol mobile untuk pindah ke status berikutnya, panel detail untuk mengedit judul dan deskripsi serta melihat riwayat, dan daftar task yang dihapus. Tombol tema di header memilih mode terang/gelap; pilihannya disimpan di browser dan awalnya mengikuti preferensi sistem. Saat seseorang menggeser kartu, browser lain yang membuka board menampilkan kursor berlabel actor; perubahan task juga muncul otomatis. Backend memvalidasi input dan urutan status. `backend/schema.sql` berisi skema dan trigger audit log; `backend/src/migrate.ts` menerapkannya.
+Frontend menampilkan empat kolom, form pembuatan, dropdown actor, drag-and-drop atau tombol mobile untuk pindah ke status berikutnya, modal edit, panel riwayat, dan daftar task yang dihapus. Tombol tema memilih mode terang/gelap; pilihannya disimpan di browser. Saat seseorang menggeser kartu, browser lain yang membuka board menampilkan kursor berlabel actor melalui SSE; perubahan task juga muncul otomatis. Backend memvalidasi input dan urutan status. `backend/schema.sql` berisi skema dan trigger audit log; `backend/src/migrate.ts` menerapkannya.
 
 | Method | Endpoint | Fungsi |
 | --- | --- | --- |
@@ -80,6 +112,15 @@ Frontend menampilkan empat kolom, form pembuatan, dropdown actor, drag-and-drop 
 **Apa yang direfactor pertama jika sistem membesar?** Pisahkan aturan domain dan operasi database dari `app.ts` menjadi service/repository, lalu tambahkan identitas user dari autentikasi. Satu file route masih mudah diikuti untuk scope ini, tetapi pertumbuhan fitur akan membuatnya sulit dirawat.
 
 **Bagaimana AI digunakan?** AI membantu menyusun kerangka workspace, API, skema SQL, UI board, dokumentasi, dan tes. Solusi divalidasi dengan pemeriksaan TypeScript, build, migrasi database, serta tes integrasi terhadap Neon untuk transisi status, idempotensi, soft delete, dan sifat append-only audit log. Kandidat tetap perlu memahami dan mampu menjelaskan seluruh keputusan serta trade-off di atas.
+
+## Deployment
+
+Frontend dapat dideploy sebagai aplikasi Vite di Vercel. Backend dapat dijalankan pada platform Node.js yang mendukung Express dan koneksi PostgreSQL, misalnya Render, Railway, atau Fly.io. Set environment production berikut pada masing-masing platform:
+
+- Backend: `DATABASE_URL`, `PORT`.
+- Frontend: `VITE_API_URL`, `VITE_PORT` (atau port yang disediakan platform).
+
+Backend production juga perlu mengatur CORS agar hanya menerima origin frontend production. SSE/presence saat ini disimpan di memori satu instance, sehingga deployment multi-instance memerlukan broker bersama seperti Redis.
 
 ## Jika ada waktu lebih
 
