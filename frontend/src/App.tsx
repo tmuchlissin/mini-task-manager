@@ -49,6 +49,7 @@ export function App() {
   const [actor, setActor] = useState("");
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
+  const [showCreate, setShowCreate] = useState(false);
   const [selected, setSelected] = useState<Task | null>(null);
   const [editTitle, setEditTitle] = useState("");
   const [editDescription, setEditDescription] = useState("");
@@ -140,6 +141,7 @@ export function App() {
       await api<Task>("/api/tasks", { method: "POST", body: JSON.stringify({ title, description, actor }) });
       setTitle("");
       setDescription("");
+      setShowCreate(false);
       await refresh();
     });
   }
@@ -234,6 +236,11 @@ export function App() {
         <div><p className="eyebrow">INTERNAL WORKSPACE</p><h1>Mini Task Manager</h1><p>Manage tasks and track every change clearly.</p></div>
         <div className="header-actions">
           <span className="count">{active.length} active {active.length === 1 ? "task" : "tasks"}</span>
+          <div className="header-actor">
+            <label htmlFor="actor">Acting as</label>
+            <select id="actor" value={actor} onChange={(event) => setActor(event.target.value)} disabled={busy}>{actors.map((name) => <option key={name}>{name}</option>)}</select>
+          </div>
+          <button type="button" className="create-trigger" onClick={() => setShowCreate(true)} disabled={!actor}><span aria-hidden="true">+</span> New task</button>
           <button type="button" className="theme-toggle" onClick={() => setTheme(theme === "light" ? "dark" : "light")}
             aria-label={theme === "light" ? "Switch to dark theme" : "Switch to light theme"}
             title={theme === "light" ? "Switch to dark theme" : "Switch to light theme"} aria-pressed={theme === "dark"}>
@@ -250,27 +257,6 @@ export function App() {
           </button>
         </div>
       </header>
-
-      <section className="toolbar" aria-label="Create task">
-        <div className="toolbar-heading">
-          <h2>New task</h2>
-          <p>Add a task to the board</p>
-        </div>
-        <form onSubmit={create}>
-          <div className="form-row">
-            <div className="field-group title-field">
-              <label htmlFor="task-title">Task title</label>
-              <input id="task-title" value={title} onChange={(event) => setTitle(event.target.value)} maxLength={120} placeholder="Prepare invoice" required />
-            </div>
-            <div className="field-group description-field">
-              <label htmlFor="task-description">Description</label>
-              <input id="task-description" value={description} onChange={(event) => setDescription(event.target.value)} maxLength={1000} placeholder="Add context (optional)" />
-            </div>
-            <div className="actor-control"><label htmlFor="actor">Acting as</label><select id="actor" value={actor} onChange={(event) => setActor(event.target.value)} disabled={busy}>{actors.map((name) => <option key={name}>{name}</option>)}</select></div>
-            <button type="submit" disabled={busy || !actor}>Add task</button>
-          </div>
-        </form>
-      </section>
 
       <p className="board-hint"><span className="desktop-hint">Drag a card to the next column to change its status. </span><span className="mobile-hint">Use the button on a card to change its status. </span>The selected user will appear in its history.</p>
 
@@ -320,6 +306,18 @@ export function App() {
       <section className="archive"><button type="button" className="archive-toggle" onClick={() => setShowArchived(!showArchived)} aria-expanded={showArchived}>{showArchived ? "Hide" : "Show"} deleted tasks ({archived.length})</button>
         {showArchived && <div className="archive-list">{archived.length ? archived.map((task) => <div key={task.id}><span>{task.title}</span><button type="button" className="text-button" onClick={() => void openHistory(task)}>View history</button></div>) : <p>No deleted tasks yet.</p>}</div>}
       </section>
+
+      {showCreate && <div className="overlay create-overlay" onClick={() => setShowCreate(false)}><section className="create-dialog" role="dialog" aria-modal="true" aria-labelledby="create-title" onClick={(event) => event.stopPropagation()}>
+        <div className="dialog-heading"><div><p className="eyebrow">CREATE TASK</p><h2 id="create-title">Add something to the board</h2></div><button type="button" onClick={() => setShowCreate(false)} aria-label="Close create task dialog">×</button></div>
+        <form onSubmit={create}>
+          <label htmlFor="task-title">Task title</label>
+          <input id="task-title" autoFocus value={title} onChange={(event) => setTitle(event.target.value)} maxLength={120} placeholder="Prepare invoice" required />
+          <label htmlFor="task-description">Description <span>optional</span></label>
+          <textarea id="task-description" value={description} onChange={(event) => setDescription(event.target.value)} maxLength={1000} rows={5} placeholder="Add context, requirements, or notes..." />
+          <p className="dialog-actor">This change will be recorded as <strong>{actor}</strong>.</p>
+          <div className="dialog-actions"><button type="button" onClick={() => setShowCreate(false)}>Cancel</button><button type="submit" disabled={busy || !actor}>Create task</button></div>
+        </form>
+      </section></div>}
 
       {selected && <div className="overlay" onClick={() => setSelected(null)}><aside className="history" aria-label="Task history" onClick={(event) => event.stopPropagation()}>
         <div className="history-heading"><div><p className="eyebrow">AUDIT LOG</p><h2>{selected.title}</h2><p>{selected.deletedAt ? "Task deleted" : `Status: ${labels[selected.status]}`}</p></div><button type="button" onClick={() => setSelected(null)} aria-label="Close history">×</button></div>
