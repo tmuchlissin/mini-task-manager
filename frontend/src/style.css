@@ -82,6 +82,8 @@ input:focus, select:focus, textarea:focus { outline: 2px solid #35b7c6; outline-
 .card-actions .advance-button span { font-size: 16px; line-height: 1; }
 .card-secondary-actions { align-items: center; display: flex; gap: 12px; justify-content: space-between; min-width: 0; width: 100%; }
 .card-secondary-actions button { min-height: 28px; }
+.card-right-actions { align-items: end; display: flex; flex-direction: column; gap: 3px; }
+.card-right-actions .card-date { font-size: 10px !important; white-space: nowrap; }
 .card-actions button:not(.text-button):not(.delete-button):hover, .form-row button:hover { filter: brightness(1.1); }
 .card-actions .text-button:hover, .card-actions .delete-button:hover { text-decoration: underline; }
 .text-button, .delete-button, .archive-toggle { background: none; border: 0; color: #087f98; font-size: 12px; font-weight: 700; padding: 3px 0; }

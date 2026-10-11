@@ -303,11 +303,13 @@ export function App() {
               onDragEnd={endDrag}>
               <h3>{task.title}</h3>
               {task.description && <p className="card-description">{task.description}</p>}
-              <p className="card-date">Created {new Date(task.createdAt).toLocaleDateString("en-US")}</p>
               <div className="card-actions">
                 <div className="card-secondary-actions">
                   <button type="button" className="text-button" onClick={() => void openHistory(task)}>History</button>
-                  <button type="button" className="delete-button" onClick={() => remove(task)} disabled={busy} aria-label={`Delete ${task.title}`}>Delete</button>
+                  <div className="card-right-actions">
+                    <button type="button" className="delete-button" onClick={() => remove(task)} disabled={busy} aria-label={`Delete ${task.title}`}>Delete</button>
+                    <span className="card-date">Created {new Date(task.createdAt).toLocaleDateString("en-US")}</span>
+                  </div>
                 </div>
                 {status !== "done" && <button type="button" className="advance-button" onClick={() => advance(task)} disabled={busy} aria-label={`Move to ${labels[statuses[statuses.indexOf(status) + 1]]}`}>
                   {labels[statuses[statuses.indexOf(status) + 1]]} <span aria-hidden="true">→</span>
