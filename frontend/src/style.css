@@ -15,14 +15,18 @@ h1 { font-size: clamp(28px, 3vw, 38px); letter-spacing: -.04em; margin: 0 0 7px;
 .theme-toggle:hover { border-color: #168ead; }
 .theme-toggle:focus-visible { outline: 2px solid #168ead; outline-offset: 2px; }
 .theme-toggle svg { height: 21px; width: 21px; }
-.toolbar { align-items: end; background: white; border: 1.5px solid #d8dce3; border-radius: 14px; box-shadow: 0 5px 24px #0000000d; display: flex; gap: 24px; justify-content: space-between; margin-bottom: 28px; padding: 20px; }
-.toolbar form { flex: 1; min-width: 0; }
+.toolbar { background: white; border: 1.5px solid #d8dce3; border-radius: 14px; box-shadow: 0 5px 24px #0000000d; margin-bottom: 28px; padding: 20px; }
+.toolbar-heading { align-items: baseline; display: flex; gap: 10px; margin-bottom: 16px; }
+.toolbar-heading h2 { font-size: 16px; margin: 0; }
+.toolbar-heading p { color: #757b85; font-size: 12px; margin: 0; }
+.toolbar form { min-width: 0; }
 .toolbar label { color: #565c66; display: block; font-size: 12px; font-weight: 700; margin-bottom: 8px; }
 .form-row { align-items: end; display: flex; gap: 10px; }
 .field-group { min-width: 0; }
 .title-field { flex: .85; }
 .description-field { flex: 1.15; }
 .field-group input { width: 100%; }
+.actor-control { flex: 0 0 170px; }
 input, select, textarea { background: #fff; border: 1px solid #dcdfe4; border-radius: 8px; color: #202124; min-height: 40px; padding: 9px 12px; }
 input { flex: 1; min-width: 120px; }
 textarea { resize: vertical; }
@@ -100,6 +104,7 @@ input:focus, select:focus, textarea:focus { outline: 2px solid #35b7c6; outline-
 :root[data-theme="dark"] { color: #f4f4f5; background: #080809; color-scheme: dark; }
 [data-theme="dark"] .page-header p:last-child,
 [data-theme="dark"] .board-hint,
+[data-theme="dark"] .toolbar-heading p,
 [data-theme="dark"] .toolbar label,
 [data-theme="dark"] .card > p,
 [data-theme="dark"] .empty,
@@ -148,8 +153,8 @@ input:focus, select:focus, textarea:focus { outline: 2px solid #35b7c6; outline-
   .column { min-height: 170px; }
 }
 @media (max-width: 760px) {
-  .toolbar { align-items: stretch; flex-direction: column; gap: 16px; }
   .toolbar form { max-width: none; }
+  .actor-control { flex-basis: auto; }
   .actor-control select { width: 100%; }
   .form-row { align-items: stretch; flex-direction: column; }
   .form-row button { min-height: 44px; }

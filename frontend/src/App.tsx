@@ -252,6 +252,10 @@ export function App() {
       </header>
 
       <section className="toolbar" aria-label="Create task">
+        <div className="toolbar-heading">
+          <h2>New task</h2>
+          <p>Add a task to the board</p>
+        </div>
         <form onSubmit={create}>
           <div className="form-row">
             <div className="field-group title-field">
@@ -262,10 +266,10 @@ export function App() {
               <label htmlFor="task-description">Description</label>
               <input id="task-description" value={description} onChange={(event) => setDescription(event.target.value)} maxLength={1000} placeholder="Add context (optional)" />
             </div>
+            <div className="actor-control"><label htmlFor="actor">Acting as</label><select id="actor" value={actor} onChange={(event) => setActor(event.target.value)} disabled={busy}>{actors.map((name) => <option key={name}>{name}</option>)}</select></div>
             <button type="submit" disabled={busy || !actor}>Add task</button>
           </div>
         </form>
-        <div className="actor-control"><label htmlFor="actor">Acting as</label><select id="actor" value={actor} onChange={(event) => setActor(event.target.value)} disabled={busy}>{actors.map((name) => <option key={name}>{name}</option>)}</select></div>
       </section>
 
       <p className="board-hint"><span className="desktop-hint">Drag a card to the next column to change its status. </span><span className="mobile-hint">Use the button on a card to change its status. </span>The selected user will appear in its history.</p>
