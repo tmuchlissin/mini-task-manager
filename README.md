@@ -55,6 +55,7 @@ Frontend menampilkan empat kolom, form pembuatan, dropdown actor, drag-and-drop 
 ## Asumsi dan trade-off
 
 - Struktur task: `id`, `title`, `description`, `status`, `createdAt`, `updatedAt`, `deletedAt`. Task baru selalu berstatus `to_do`.
+- Status mengikuti urutan wajib assignment: `to_do → pending → in_progress → done`. Dalam implementasi ini, `pending` berarti task sudah diakui tetapi masih menunggu approval, assignment, atau persiapan sebelum dikerjakan.
 - Actor dipilih dari tiga nama tetap. Brief tidak meminta autentikasi; pengguna lain masih bisa memilih nama yang sama.
 - Permintaan ke status yang sama berhasil tanpa menambah log. Perpindahan hanya satu tahap ke depan; kembali atau melompat menghasilkan `409`.
 - Delete memakai soft delete agar task dan audit log tetap dapat dibaca. Pembuatan, perubahan judul/deskripsi, dan penghapusan juga dicatat.
