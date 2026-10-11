@@ -98,16 +98,24 @@ Browser React → API Express → PostgreSQL (tasks dan audit_logs)
 | `GET` | `/api/presence` | Membuka koneksi SSE untuk kursor dan perubahan board real-time. |
 | `POST` | `/api/presence` | Mengirim posisi kursor saat drag atau menutup sesi drag. |
 
-## Asumsi dan trade-off
+## Asumsi yang diambil
 
-- Struktur task: `id`, `title`, `description`, `status`, `createdAt`, `updatedAt`, `deletedAt`. Task baru selalu berstatus `to_do`.
-- Status mengikuti urutan wajib assignment: `to_do → pending → in_progress → done`. Dalam implementasi ini, `pending` berarti task sudah diakui tetapi masih menunggu approval, assignment, atau persiapan sebelum dikerjakan.
-- Actor dipilih dari tiga nama tetap. Brief tidak meminta autentikasi; pengguna lain masih bisa memilih nama yang sama.
-- Permintaan ke status yang sama berhasil tanpa menambah log. Perpindahan hanya satu tahap ke depan; kembali atau melompat menghasilkan `409`.
-- Delete memakai soft delete agar task dan audit log tetap dapat dibaca. Pembuatan, perubahan judul/deskripsi, dan penghapusan juga dicatat.
-- Kartu dapat digeser hanya ke kolom berikutnya. Tombol perpindahan status tetap tersedia pada layar kecil untuk perangkat tanpa drag-and-drop. Keduanya memakai endpoint yang sama.
-- Kursor real-time memakai Server-Sent Events dan disimpan sementara dalam memori backend, bukan audit log. Kursor hilang setelah drag selesai atau sekitar 5 detik tanpa pembaruan. Ini cocok untuk satu instance Express; beberapa instance membutuhkan pub/sub bersama seperti Redis.
-- PostgreSQL/Neon memungkinkan status dan log ditulis dalam satu transaksi, dengan tambahan kebutuhan koneksi database dan migrasi.
+- Task memiliki `id`, `title`, `description`, `status`, `createdAt`, `updatedAt`, dan `deletedAt`.
+- Task baru selalu dimulai dari status `to_do`.
+- `pending` dianggap sebagai tahap ketika task sudah diakui, tetapi masih menunggu approval, assignment, atau persiapan.
+- Actor dipilih dari tiga nama yang sudah ditentukan karena assignment tidak meminta autentikasi.
+- Status hanya boleh bergerak mengikuti urutan `to_do → pending → in_progress → done`.
+- Task yang dihapus masih perlu dapat dilihat riwayatnya, sehingga penghapusan dilakukan secara soft delete.
+
+## Trade-off yang dibuat
+
+- Actor hardcoded mempercepat implementasi, tetapi belum membuktikan identitas pengguna sebenarnya. Sistem production perlu autentikasi.
+- Soft delete menjaga audit log tetap tersedia, tetapi data yang sudah tidak aktif tetap tersimpan di database.
+- Status hanya dapat maju satu tahap agar aturan assignment selalu konsisten, tetapi pengguna tidak dapat langsung melompat ke status lain.
+- Update ke status atau detail yang sama dianggap berhasil tanpa membuat audit log baru. Ini menjaga operasi tetap idempotent dan mencegah log duplikat.
+- SSE dan presence disimpan di memory backend agar implementasinya sederhana. Ini cocok untuk satu instance, tetapi deployment multi-instance membutuhkan Redis atau pub/sub bersama.
+- PostgreSQL/Neon dipilih karena transaksi dapat menjaga task dan audit log tetap sinkron, dengan konsekuensi perlu mengelola koneksi dan migrasi database.
+- Drag-and-drop menjadi interaksi utama, dengan tombol status sebagai fallback untuk perangkat kecil atau browser yang tidak mendukung drag dengan nyaman.
 
 ## Jawaban pertanyaan take-home
 
