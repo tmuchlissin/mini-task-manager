@@ -50,19 +50,20 @@ input:focus, select:focus, textarea:focus { outline: 2px solid #35b7c6; outline-
 .board-hint { color: #666b75; font-size: 13px; margin: 0; text-align: left; }
 .mobile-hint { display: none; }
 .column { --status-accent: #52718d; background: #f6f7f9; border: 1.5px solid #d8dce3; border-radius: 14px; min-height: 0; padding: 16px; transition: border-color .18s ease, background-color .18s ease; }
-.column.to_do { --status-accent: #52718d; }
-.column.pending { --status-accent: #0b98a6; }
-.column.in_progress { --status-accent: #4d74cf; }
-.column.done { --status-accent: #7549bd; }
+.column.to_do { --status-accent: #2563eb; }
+.column.pending { --status-accent: #06b6d4; }
+.column.in_progress { --status-accent: #7c3aed; }
+.column.done { --status-accent: #c026d3; }
 .column.drop-eligible { border: 2px dashed #16a8b3; padding: 14px; }
 .column.drop-over { background: #f0f5f8; border-color: #168ead; }
 .column-heading { align-items: center; display: flex; justify-content: space-between; margin-bottom: 16px; padding: 0 1px; }
 .column-heading h2 { align-items: center; display: flex; font-size: 14px; font-weight: 700; gap: 9px; letter-spacing: 0; margin: 0; }
 .column-heading h2::before { background: var(--status-accent); border-radius: 50%; content: ""; height: 8px; width: 8px; }
 .column-heading span { background: #e9ebef; border-radius: 999px; color: #626875; font-size: 12px; font-weight: 700; min-width: 26px; padding: 4px 8px; text-align: center; }
-.pending .column-heading h2 { color: #087f98; }
-.in_progress .column-heading h2 { color: #6241ad; }
-.done .column-heading h2 { color: #6441a5; }
+.to_do .column-heading h2 { color: #2563eb; }
+.pending .column-heading h2 { color: #0891b2; }
+.in_progress .column-heading h2 { color: #7c3aed; }
+.done .column-heading h2 { color: #c026d3; }
 .cards { display: grid; align-content: start; gap: 10px; }
 .card { background: white; border: 1.5px solid #d5d9e0; border-radius: 10px; box-shadow: 0 2px 8px #1825400b; cursor: pointer; min-width: 0; padding: 14px; transition: border-color .18s ease, box-shadow .18s ease; }
 .card:hover { border-color: color-mix(in srgb, var(--status-accent) 45%, #e2e5ea); box-shadow: 0 4px 12px #18254014; }
@@ -158,9 +159,10 @@ input:focus, select:focus, textarea:focus { outline: 2px solid #35b7c6; outline-
 [data-theme="dark"] .theme-toggle { background: #1b1b1e; border-color: #414146; color: #e8d9ff; }
 [data-theme="dark"] .theme-toggle:hover { border-color: #d0b3ff; }
 [data-theme="dark"] .column-heading span { background: #29292d; color: #d5d5dc; }
-[data-theme="dark"] .pending .column-heading h2 { color: #62d8dd; }
-[data-theme="dark"] .in_progress .column-heading h2 { color: #c5a9ff; }
-[data-theme="dark"] .done .column-heading h2 { color: #c5a9ff; }
+[data-theme="dark"] .to_do .column-heading h2 { color: #60a5fa; }
+[data-theme="dark"] .pending .column-heading h2 { color: #67e8f9; }
+[data-theme="dark"] .in_progress .column-heading h2 { color: #a78bfa; }
+[data-theme="dark"] .done .column-heading h2 { color: #f0abfc; }
 [data-theme="dark"] .form-row button,
 [data-theme="dark"] .card-actions button:not(.text-button):not(.delete-button) { background: #895ddd; border-color: #895ddd; }
 [data-theme="dark"] .form-row button { background: linear-gradient(110deg, #087f98, #6643b8); border-color: #168ead; }
