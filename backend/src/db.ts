@@ -7,4 +7,7 @@ if (!process.env.DATABASE_URL) {
 }
 
 // Reuse a small number of PostgreSQL connections across requests.
-export const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL, max: 5 });
+export const pool = new pg.Pool({
+  connectionString: process.env.DATABASE_URL,
+  max: 5,
+});

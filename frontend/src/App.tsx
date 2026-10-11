@@ -1,15 +1,62 @@
-import { useEffect, useRef, useState, type DragEvent, type FormEvent } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  type DragEvent,
+  type FormEvent,
+} from "react";
 
 // The order is shared with the backend workflow: a task may move forward one step.
 const statuses = ["to_do", "pending", "in_progress", "done"] as const;
 type Status = (typeof statuses)[number];
-type Task = { id: string; title: string; description: string; status: Status; createdAt: string; updatedAt: string; deletedAt: string | null };
-type AuditLog = { id: string; taskId: string; actor: string; action: "created" | "title_changed" | "details_changed" | "status_changed" | "deleted"; fromStatus: Status | null; toStatus: Status | null; previousTitle: string | null; previousDescription: string | null; taskTitle: string; taskDescription: string | null; occurredAt: string };
-type LiveCursor = { clientId: string; actor: string; taskId: string; x: number; y: number; sequence: number };
-const labels: Record<Status, string> = { to_do: "To Do", pending: "Pending", in_progress: "In Progress", done: "Done" };
+type Task = {
+  id: string;
+  title: string;
+  description: string;
+  status: Status;
+  createdAt: string;
+  updatedAt: string;
+  deletedAt: string | null;
+};
+type AuditLog = {
+  id: string;
+  taskId: string;
+  actor: string;
+  action:
+    | "created"
+    | "title_changed"
+    | "details_changed"
+    | "status_changed"
+    | "deleted";
+  fromStatus: Status | null;
+  toStatus: Status | null;
+  previousTitle: string | null;
+  previousDescription: string | null;
+  taskTitle: string;
+  taskDescription: string | null;
+  occurredAt: string;
+};
+type LiveCursor = {
+  clientId: string;
+  actor: string;
+  taskId: string;
+  x: number;
+  y: number;
+  sequence: number;
+};
+const labels: Record<Status, string> = {
+  to_do: "To Do",
+  pending: "Pending",
+  in_progress: "In Progress",
+  done: "Done",
+};
 type Theme = "light" | "dark";
+
 // Vite injects this URL from frontend/.env; keeping it configurable supports deployment.
-const apiBaseUrl = ((import.meta as ImportMeta & { env?: { VITE_API_URL?: string } }).env?.VITE_API_URL ?? "").replace(/\/$/, "");
+const apiBaseUrl = (
+  (import.meta as ImportMeta & { env?: { VITE_API_URL?: string } }).env
+    ?.VITE_API_URL ?? ""
+).replace(/\/$/, "");
 const apiUrl = (path: string) => `${apiBaseUrl}${path}`;
 
 function initialTheme(): Theme {
@@ -17,33 +64,45 @@ function initialTheme(): Theme {
   try {
     const saved = window.localStorage.getItem("mini-task-theme");
     if (saved === "light" || saved === "dark") return saved;
-  } catch { /* Storage may be unavailable in private browsing. */ }
-  return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+  } catch {
+    /* Storage may be unavailable in private browsing. */
+  }
+  return window.matchMedia("(prefers-color-scheme: dark)").matches
+    ? "dark"
+    : "light";
 }
 
 async function api<T>(url: string, options?: RequestInit): Promise<T> {
   // One typed request helper keeps API error handling consistent across the UI.
   const response = await fetch(apiUrl(url), {
     ...options,
-    headers: { "Content-Type": "application/json", ...options?.headers }
+    headers: { "Content-Type": "application/json", ...options?.headers },
   });
   if (!response.ok) {
-    const body = await response.json().catch(() => ({})) as { error?: string };
+    const body = (await response.json().catch(() => ({}))) as {
+      error?: string;
+    };
     throw new Error(body.error ?? `Request failed (${response.status})`);
   }
-  return response.status === 204 ? undefined as T : response.json() as Promise<T>;
+  return response.status === 204
+    ? (undefined as T)
+    : (response.json() as Promise<T>);
 }
 
 function describe(log: AuditLog): string {
   // Convert database audit records into readable sentences for the timeline.
   if (log.action === "created") return `created task “${log.taskTitle}”`;
   if (log.action === "deleted") return `deleted task “${log.taskTitle}”`;
-  if (log.action === "title_changed") return `renamed “${log.previousTitle}” to “${log.taskTitle}”`;
+  if (log.action === "title_changed")
+    return `renamed “${log.previousTitle}” to “${log.taskTitle}”`;
   if (log.action === "details_changed") {
     const titleChanged = log.previousTitle !== log.taskTitle;
-    const descriptionChanged = (log.previousDescription ?? "") !== (log.taskDescription ?? "");
-    if (titleChanged && descriptionChanged) return `updated the title and description`;
-    if (titleChanged) return `renamed “${log.previousTitle}” to “${log.taskTitle}”`;
+    const descriptionChanged =
+      (log.previousDescription ?? "") !== (log.taskDescription ?? "");
+    if (titleChanged && descriptionChanged)
+      return `updated the title and description`;
+    if (titleChanged)
+      return `renamed “${log.previousTitle}” to “${log.taskTitle}”`;
     return `updated the description`;
   }
   return `changed the status from ${labels[log.fromStatus!]} to ${labels[log.toStatus!]}`;
@@ -79,8 +138,11 @@ export function App() {
   useEffect(() => {
     // Apply the selected theme to the document and persist it for the next visit.
     document.documentElement.dataset.theme = theme;
-    try { window.localStorage.setItem("mini-task-theme", theme); }
-    catch { /* The selected theme still applies for this session. */ }
+    try {
+      window.localStorage.setItem("mini-task-theme", theme);
+    } catch {
+      /* The selected theme still applies for this session. */
+    }
   }, [theme]);
 
   useEffect(() => {
@@ -98,13 +160,22 @@ export function App() {
     // Reload tasks after a mutation or a real-time notification from another user.
     const rows = await api<Task[]>("/api/tasks?includeDeleted=true");
     setTasks(rows);
-    setSelected((current) => current ? rows.find((task) => task.id === current.id) ?? null : null);
+    setSelected((current) =>
+      current ? (rows.find((task) => task.id === current.id) ?? null) : null,
+    );
   }
 
   useEffect(() => {
     // Load the initial board and actor list in parallel when the app mounts.
-    Promise.all([api<Task[]>("/api/tasks?includeDeleted=true"), api<string[]>("/api/actors")])
-      .then(([rows, users]) => { setTasks(rows); setActors(users); setActor(users[0] ?? ""); })
+    Promise.all([
+      api<Task[]>("/api/tasks?includeDeleted=true"),
+      api<string[]>("/api/actors"),
+    ])
+      .then(([rows, users]) => {
+        setTasks(rows);
+        setActors(users);
+        setActor(users[0] ?? "");
+      })
       .catch((cause: Error) => setError(cause.message))
       .finally(() => setLoading(false));
   }, []);
@@ -114,7 +185,9 @@ export function App() {
     const stream = new EventSource(apiUrl("/api/presence"));
     stream.addEventListener("cursors", (event) => {
       const cursors = JSON.parse(event.data) as LiveCursor[];
-      setLiveCursors(cursors.filter((cursor) => cursor.clientId !== clientId.current));
+      setLiveCursors(
+        cursors.filter((cursor) => cursor.clientId !== clientId.current),
+      );
     });
     stream.addEventListener("tasks-changed", () => {
       void refresh().catch((cause: Error) => setError(cause.message));
@@ -133,12 +206,20 @@ export function App() {
     void fetch(apiUrl("/api/presence"), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ clientId: clientId.current, active: false, sequence: ++cursorSequence.current }),
-      keepalive: true
+      body: JSON.stringify({
+        clientId: clientId.current,
+        active: false,
+        sequence: ++cursorSequence.current,
+      }),
+      keepalive: true,
     }).catch(() => {});
   }
 
-  function publishCursor(event: DragEvent<HTMLElement>, task: Task, force = false) {
+  function publishCursor(
+    event: DragEvent<HTMLElement>,
+    task: Task,
+    force = false,
+  ) {
     // Normalize the cursor position to 0..1 so it works at any board size.
     const board = boardRef.current;
     if (!board || event.clientX <= 0 || event.clientY <= 0) return;
@@ -146,12 +227,25 @@ export function App() {
     if (!force && now - lastCursorUpdate.current < 80) return;
     lastCursorUpdate.current = now;
     const rect = board.getBoundingClientRect();
-    const x = Math.max(0, Math.min(1, (event.clientX - rect.left) / rect.width));
-    const y = Math.max(0, Math.min(1, (event.clientY - rect.top) / rect.height));
+    const x = Math.max(
+      0,
+      Math.min(1, (event.clientX - rect.left) / rect.width),
+    );
+    const y = Math.max(
+      0,
+      Math.min(1, (event.clientY - rect.top) / rect.height),
+    );
     void fetch(apiUrl("/api/presence"), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ clientId: clientId.current, actor, taskId: task.id, x, y, sequence: ++cursorSequence.current })
+      body: JSON.stringify({
+        clientId: clientId.current,
+        actor,
+        taskId: task.id,
+        x,
+        y,
+        sequence: ++cursorSequence.current,
+      }),
     }).catch(() => {});
   }
 
@@ -159,15 +253,23 @@ export function App() {
     // Wrap mutations with shared loading and error state.
     setBusy(true);
     setError("");
-    try { await work(); } catch (cause) { setError(cause instanceof Error ? cause.message : "Terjadi kesalahan"); }
-    finally { setBusy(false); }
+    try {
+      await work();
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Terjadi kesalahan");
+    } finally {
+      setBusy(false);
+    }
   }
 
   function create(event: FormEvent) {
     // Submit the create modal to the backend, then refresh the board.
     event.preventDefault();
     void run(async () => {
-      await api<Task>("/api/tasks", { method: "POST", body: JSON.stringify({ title, description, actor }) });
+      await api<Task>("/api/tasks", {
+        method: "POST",
+        body: JSON.stringify({ title, description, actor }),
+      });
       setTitle("");
       setDescription("");
       setShowCreate(false);
@@ -177,11 +279,16 @@ export function App() {
 
   function moveToStatus(task: Task, next: Status) {
     // Both the button and drag-and-drop use this single status transition path.
-    if (busy || statuses.indexOf(next) !== statuses.indexOf(task.status) + 1) return;
+    if (busy || statuses.indexOf(next) !== statuses.indexOf(task.status) + 1)
+      return;
     void run(async () => {
-      await api<Task>(`/api/tasks/${task.id}/status`, { method: "PUT", body: JSON.stringify({ status: next, actor }) });
+      await api<Task>(`/api/tasks/${task.id}/status`, {
+        method: "PUT",
+        body: JSON.stringify({ status: next, actor }),
+      });
       await refresh();
-      if (selected?.id === task.id) setLogs(await api<AuditLog[]>(`/api/tasks/${task.id}/audit-logs`));
+      if (selected?.id === task.id)
+        setLogs(await api<AuditLog[]>(`/api/tasks/${task.id}/audit-logs`));
     });
   }
 
@@ -193,7 +300,11 @@ export function App() {
 
   function canDrop(task: Task | undefined, target: Status): task is Task {
     // A drop is valid only when it moves exactly one step forward.
-    return !!task && !busy && statuses.indexOf(target) === statuses.indexOf(task.status) + 1;
+    return (
+      !!task &&
+      !busy &&
+      statuses.indexOf(target) === statuses.indexOf(task.status) + 1
+    );
   }
 
   function startDrag(event: DragEvent<HTMLElement>, task: Task) {
@@ -231,11 +342,18 @@ export function App() {
 
   function remove(task: Task) {
     // Deletion is confirmed in the UI, then handled as a soft delete by the API.
-    if (!window.confirm(`Delete “${task.title}”? Its history will be preserved.`)) return;
+    if (
+      !window.confirm(`Delete “${task.title}”? Its history will be preserved.`)
+    )
+      return;
     void run(async () => {
-      await api<void>(`/api/tasks/${task.id}`, { method: "DELETE", body: JSON.stringify({ actor }) });
+      await api<void>(`/api/tasks/${task.id}`, {
+        method: "DELETE",
+        body: JSON.stringify({ actor }),
+      });
       await refresh();
-      if (selected?.id === task.id) setLogs(await api<AuditLog[]>(`/api/tasks/${task.id}/audit-logs`));
+      if (selected?.id === task.id)
+        setLogs(await api<AuditLog[]>(`/api/tasks/${task.id}/audit-logs`));
     });
   }
 
@@ -253,25 +371,43 @@ export function App() {
     setSelected(task);
     setPanelMode("history");
     setLogs([]);
-    try { setLogs(await api<AuditLog[]>(`/api/tasks/${task.id}/audit-logs`)); }
-    catch (cause) { setError(cause instanceof Error ? cause.message : "Failed to load history"); }
+    try {
+      setLogs(await api<AuditLog[]>(`/api/tasks/${task.id}/audit-logs`));
+    } catch (cause) {
+      setError(
+        cause instanceof Error ? cause.message : "Failed to load history",
+      );
+    }
   }
 
   async function updateDetails(event: FormEvent) {
     // Save title and description changes and refresh the selected task.
     event.preventDefault();
     if (!selected || selected.deletedAt) return;
-    setBusy(true); setError("");
+    setBusy(true);
+    setError("");
     try {
-      const updated = await api<Task>(`/api/tasks/${selected.id}`, { method: "PUT", body: JSON.stringify({ title: editTitle, description: editDescription, actor }) });
+      const updated = await api<Task>(`/api/tasks/${selected.id}`, {
+        method: "PUT",
+        body: JSON.stringify({
+          title: editTitle,
+          description: editDescription,
+          actor,
+        }),
+      });
       setSelected(updated);
       setEditTitle(updated.title);
       setEditDescription(updated.description);
       await refresh();
       setLogs(await api<AuditLog[]>(`/api/tasks/${updated.id}/audit-logs`));
       setSelected(null);
-    } catch (cause) { setError(cause instanceof Error ? cause.message : "Failed to update task"); }
-    finally { setBusy(false); }
+    } catch (cause) {
+      setError(
+        cause instanceof Error ? cause.message : "Failed to update task",
+      );
+    } finally {
+      setBusy(false);
+    }
   }
 
   // Keep active and deleted tasks separate for the board and archive sections.
@@ -282,18 +418,53 @@ export function App() {
     <main>
       {/* Header: title, active-task count, and theme control. */}
       <header className="page-header">
-        <div><p className="eyebrow">INTERNAL WORKSPACE</p><h1>Mini Task Manager</h1><p>Manage tasks and track every change clearly.</p></div>
+        <div>
+          <p className="eyebrow">INTERNAL WORKSPACE</p>
+          <h1>Mini Task Manager</h1>
+          <p>Manage tasks and track every change clearly.</p>
+        </div>
         <div className="header-actions">
-          <span className="count">{active.length} active {active.length === 1 ? "task" : "tasks"}</span>
-          <button type="button" className="theme-toggle" onClick={() => setTheme(theme === "light" ? "dark" : "light")}
-            aria-label={theme === "light" ? "Switch to dark theme" : "Switch to light theme"}
-            title={theme === "light" ? "Switch to dark theme" : "Switch to light theme"} aria-pressed={theme === "dark"}>
+          <span className="count">
+            {active.length} active {active.length === 1 ? "task" : "tasks"}
+          </span>
+          <button
+            type="button"
+            className="theme-toggle"
+            onClick={() => setTheme(theme === "light" ? "dark" : "light")}
+            aria-label={
+              theme === "light"
+                ? "Switch to dark theme"
+                : "Switch to light theme"
+            }
+            title={
+              theme === "light"
+                ? "Switch to dark theme"
+                : "Switch to light theme"
+            }
+            aria-pressed={theme === "dark"}
+          >
             {theme === "light" ? (
-              <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+              <svg
+                aria-hidden="true"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.8"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
                 <path d="M20.2 15.2A8.5 8.5 0 0 1 8.8 3.8a8.5 8.5 0 1 0 11.4 11.4Z" />
               </svg>
             ) : (
-              <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+              <svg
+                aria-hidden="true"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.8"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
                 <circle cx="12" cy="12" r="4" />
                 <path d="M12 2v2m0 16v2M4.93 4.93l1.42 1.42m11.3 11.3 1.42 1.42M2 12h2m16 0h2M4.93 19.07l1.42-1.42m11.3-11.3 1.42-1.42" />
               </svg>
@@ -305,96 +476,392 @@ export function App() {
       {/* Board controls: create a task and choose the actor for audit entries. */}
       <div className="board-toolbar">
         <div className="board-controls">
-          <button type="button" className="create-trigger" onClick={() => setShowCreate(true)} disabled={!actor}><span aria-hidden="true">+</span> New task</button>
+          <button
+            type="button"
+            className="create-trigger"
+            onClick={() => setShowCreate(true)}
+            disabled={!actor}
+          >
+            <span aria-hidden="true">+</span> New task
+          </button>
           <div className="header-actor">
             <label htmlFor="actor">Acting as</label>
-            <select id="actor" value={actor} onChange={(event) => setActor(event.target.value)} disabled={busy}>{actors.map((name) => <option key={name}>{name}</option>)}</select>
+            <select
+              id="actor"
+              value={actor}
+              onChange={(event) => setActor(event.target.value)}
+              disabled={busy}
+            >
+              {actors.map((name) => (
+                <option key={name}>{name}</option>
+              ))}
+            </select>
           </div>
         </div>
-        <p className="board-hint"><span className="desktop-hint">Drag a card to the next column to change its status. </span><span className="mobile-hint">Use the button on a card to change its status. </span>The selected user will appear in its history.</p>
+        <p className="board-hint">
+          <span className="desktop-hint">
+            Drag a card to the next column to change its status.{" "}
+          </span>
+          <span className="mobile-hint">
+            Use the button on a card to change its status.{" "}
+          </span>
+          The selected user will appear in its history.
+        </p>
       </div>
 
       {/* API errors are shown above the board with a retry action. */}
-      {error && <p className="error" role="alert">{error} <button type="button" onClick={() => void refresh().catch((cause: Error) => setError(cause.message))}>Try again</button></p>}
-      {loading ? <p>Loading tasks...</p> : <section className="board" ref={boardRef} aria-label="Task board">
-        {statuses.map((status) => {
-          const columnTasks = active.filter((task) => task.status === status);
-          const draggingTask = tasks.find((task) => task.id === draggedId);
-          const eligible = canDrop(draggingTask, status);
-          return <div className={`column ${status}${eligible ? " drop-eligible" : ""}${overStatus === status ? " drop-over" : ""}`} key={status}
-            onDragOver={(event) => dragOver(event, status)}
-            onDragLeave={(event) => { if (!event.currentTarget.contains(event.relatedTarget as Node)) setOverStatus(null); }}
-            onDrop={(event) => drop(event, status)}>
-            <div className="column-heading"><h2>{labels[status]}</h2><span>{columnTasks.length}</span></div>
-            <div className="cards">{columnTasks.length ? columnTasks.map((task) => <article className={`card${draggedId === task.id ? " dragging" : ""}`} key={task.id} tabIndex={0}
-              draggable={!busy && status !== "done"}
-              onClick={(event) => { if (!(event.target as HTMLElement).closest("button")) void openEditor(task); }}
-              onKeyDown={(event) => { if ((event.key === "Enter" || event.key === " ") && event.target === event.currentTarget) { event.preventDefault(); void openEditor(task); } }}
-              onDragStart={(event) => startDrag(event, task)}
-              onDrag={(event) => publishCursor(event, task)}
-              onDragEnd={endDrag}>
-              <h3>{task.title}</h3>
-              {task.description && <p className="card-description">{task.description}</p>}
-              <div className="card-actions">
-                <div className="card-secondary-actions">
-                  <button type="button" className="text-button" onClick={() => void openHistory(task)}>History</button>
-                  <div className="card-right-actions">
-                    <button type="button" className="delete-button" onClick={() => remove(task)} disabled={busy} aria-label={`Delete ${task.title}`}>Delete</button>
-                    <span className="card-date">Created {new Date(task.createdAt).toLocaleDateString("en-US")}</span>
-                  </div>
+      {error && (
+        <p className="error" role="alert">
+          {error}{" "}
+          <button
+            type="button"
+            onClick={() =>
+              void refresh().catch((cause: Error) => setError(cause.message))
+            }
+          >
+            Try again
+          </button>
+        </p>
+      )}
+      {loading ? (
+        <p>Loading tasks...</p>
+      ) : (
+        <section className="board" ref={boardRef} aria-label="Task board">
+          {statuses.map((status) => {
+            const columnTasks = active.filter((task) => task.status === status);
+            const draggingTask = tasks.find((task) => task.id === draggedId);
+            const eligible = canDrop(draggingTask, status);
+            return (
+              <div
+                className={`column ${status}${eligible ? " drop-eligible" : ""}${overStatus === status ? " drop-over" : ""}`}
+                key={status}
+                onDragOver={(event) => dragOver(event, status)}
+                onDragLeave={(event) => {
+                  if (
+                    !event.currentTarget.contains(event.relatedTarget as Node)
+                  )
+                    setOverStatus(null);
+                }}
+                onDrop={(event) => drop(event, status)}
+              >
+                <div className="column-heading">
+                  <h2>{labels[status]}</h2>
+                  <span>{columnTasks.length}</span>
                 </div>
-                {status !== "done" && <button type="button" className="advance-button" onClick={() => advance(task)} disabled={busy} aria-label={`Move to ${labels[statuses[statuses.indexOf(status) + 1]]}`}>
-                  {labels[statuses[statuses.indexOf(status) + 1]]} <span aria-hidden="true">→</span>
-                </button>}
+                <div className="cards">
+                  {columnTasks.length ? (
+                    columnTasks.map((task) => (
+                      <article
+                        className={`card${draggedId === task.id ? " dragging" : ""}`}
+                        key={task.id}
+                        tabIndex={0}
+                        draggable={!busy && status !== "done"}
+                        onClick={(event) => {
+                          if (!(event.target as HTMLElement).closest("button"))
+                            void openEditor(task);
+                        }}
+                        onKeyDown={(event) => {
+                          if (
+                            (event.key === "Enter" || event.key === " ") &&
+                            event.target === event.currentTarget
+                          ) {
+                            event.preventDefault();
+                            void openEditor(task);
+                          }
+                        }}
+                        onDragStart={(event) => startDrag(event, task)}
+                        onDrag={(event) => publishCursor(event, task)}
+                        onDragEnd={endDrag}
+                      >
+                        <h3>{task.title}</h3>
+                        {task.description && (
+                          <p className="card-description">{task.description}</p>
+                        )}
+                        <div className="card-actions">
+                          <div className="card-secondary-actions">
+                            <button
+                              type="button"
+                              className="text-button"
+                              onClick={() => void openHistory(task)}
+                            >
+                              History
+                            </button>
+                            <div className="card-right-actions">
+                              <button
+                                type="button"
+                                className="delete-button"
+                                onClick={() => remove(task)}
+                                disabled={busy}
+                                aria-label={`Delete ${task.title}`}
+                              >
+                                Delete
+                              </button>
+                              <span className="card-date">
+                                Created{" "}
+                                {new Date(task.createdAt).toLocaleDateString(
+                                  "en-US",
+                                )}
+                              </span>
+                            </div>
+                          </div>
+                          {status !== "done" && (
+                            <button
+                              type="button"
+                              className="advance-button"
+                              onClick={() => advance(task)}
+                              disabled={busy}
+                              aria-label={`Move to ${labels[statuses[statuses.indexOf(status) + 1]]}`}
+                            >
+                              {labels[statuses[statuses.indexOf(status) + 1]]}{" "}
+                              <span aria-hidden="true">→</span>
+                            </button>
+                          )}
+                        </div>
+                      </article>
+                    ))
+                  ) : (
+                    <p className="empty">No tasks yet</p>
+                  )}
+                </div>
               </div>
-            </article>) : <p className="empty">No tasks yet</p>}</div>
-          </div>;
-        })}
-        {liveCursors.map((cursor) => {
-          const task = tasks.find((item) => item.id === cursor.taskId);
-          const color = ["#0a8eaa", "#7047bd", "#009f93"][Math.max(0, actors.indexOf(cursor.actor)) % 3];
-          return <div className="live-cursor" key={cursor.clientId} style={{ left: `${cursor.x * 100}%`, top: `${cursor.y * 100}%` }}>
-            <svg width="19" height="23" viewBox="0 0 19 23" aria-hidden="true"><path d="M1 1v18l4.5-4.5 3.5 7 3-1.5-3.5-7H17L1 1Z" fill={color} stroke="white" strokeWidth="1.5" /></svg>
-            <span style={{ backgroundColor: color }}>{cursor.actor}{task ? ` · ${task.title}` : " is moving a task"}</span>
-          </div>;
-        })}
-      </section>}
+            );
+          })}
+          {liveCursors.map((cursor) => {
+            const task = tasks.find((item) => item.id === cursor.taskId);
+            const color = ["#0a8eaa", "#7047bd", "#009f93"][
+              Math.max(0, actors.indexOf(cursor.actor)) % 3
+            ];
+            return (
+              <div
+                className="live-cursor"
+                key={cursor.clientId}
+                style={{
+                  left: `${cursor.x * 100}%`,
+                  top: `${cursor.y * 100}%`,
+                }}
+              >
+                <svg
+                  width="19"
+                  height="23"
+                  viewBox="0 0 19 23"
+                  aria-hidden="true"
+                >
+                  <path
+                    d="M1 1v18l4.5-4.5 3.5 7 3-1.5-3.5-7H17L1 1Z"
+                    fill={color}
+                    stroke="white"
+                    strokeWidth="1.5"
+                  />
+                </svg>
+                <span style={{ backgroundColor: color }}>
+                  {cursor.actor}
+                  {task ? ` · ${task.title}` : " is moving a task"}
+                </span>
+              </div>
+            );
+          })}
+        </section>
+      )}
 
       {/* Deleted tasks stay out of the board but remain available with their history. */}
-      <section className="archive"><button type="button" className="archive-toggle" onClick={() => setShowArchived(!showArchived)} aria-expanded={showArchived}>{showArchived ? "Hide" : "Show"} deleted tasks ({archived.length})</button>
-        {showArchived && <div className="archive-list">{archived.length ? archived.map((task) => <div key={task.id}><span>{task.title}</span><button type="button" className="text-button" onClick={() => void openHistory(task)}>View history</button></div>) : <p>No deleted tasks yet.</p>}</div>}
+      <section className="archive">
+        <button
+          type="button"
+          className="archive-toggle"
+          onClick={() => setShowArchived(!showArchived)}
+          aria-expanded={showArchived}
+        >
+          {showArchived ? "Hide" : "Show"} deleted tasks ({archived.length})
+        </button>
+        {showArchived && (
+          <div className="archive-list">
+            {archived.length ? (
+              archived.map((task) => (
+                <div key={task.id}>
+                  <span>{task.title}</span>
+                  <button
+                    type="button"
+                    className="text-button"
+                    onClick={() => void openHistory(task)}
+                  >
+                    View history
+                  </button>
+                </div>
+              ))
+            ) : (
+              <p>No deleted tasks yet.</p>
+            )}
+          </div>
+        )}
       </section>
 
       {/* Create modal closes by Escape, close button, or clicking its backdrop. */}
-      {showCreate && <div className="overlay create-overlay" onClick={() => setShowCreate(false)}><section className="create-dialog" role="dialog" aria-modal="true" aria-labelledby="create-title" onClick={(event) => event.stopPropagation()}>
-        <div className="dialog-heading"><div><p className="eyebrow">CREATE TASK</p><h2 id="create-title">Add something to the board</h2></div><button type="button" onClick={() => setShowCreate(false)} aria-label="Close create task dialog">×</button></div>
-        <form onSubmit={create}>
-          <label htmlFor="task-title">Task title</label>
-          <input id="task-title" autoFocus value={title} onChange={(event) => setTitle(event.target.value)} maxLength={120} placeholder="Prepare invoice" required />
-          <label htmlFor="task-description">Description <span>optional</span></label>
-          <textarea id="task-description" value={description} onChange={(event) => setDescription(event.target.value)} maxLength={1000} rows={5} placeholder="Add context, requirements, or notes..." />
-          <p className="dialog-actor">This change will be recorded as <strong>{actor}</strong>.</p>
-          <div className="dialog-actions"><button type="button" onClick={() => setShowCreate(false)}>Cancel</button><button type="submit" disabled={busy || !actor}>Create task</button></div>
-        </form>
-      </section></div>}
+      {showCreate && (
+        <div
+          className="overlay create-overlay"
+          onClick={() => setShowCreate(false)}
+        >
+          <section
+            className="create-dialog"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="create-title"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="dialog-heading">
+              <div>
+                <p className="eyebrow">CREATE TASK</p>
+                <h2 id="create-title">Add something to the board</h2>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowCreate(false)}
+                aria-label="Close create task dialog"
+              >
+                ×
+              </button>
+            </div>
+            <form onSubmit={create}>
+              <label htmlFor="task-title">Task title</label>
+              <input
+                id="task-title"
+                autoFocus
+                value={title}
+                onChange={(event) => setTitle(event.target.value)}
+                maxLength={120}
+                placeholder="Prepare invoice"
+                required
+              />
+              <label htmlFor="task-description">
+                Description <span>optional</span>
+              </label>
+              <textarea
+                id="task-description"
+                value={description}
+                onChange={(event) => setDescription(event.target.value)}
+                maxLength={1000}
+                rows={5}
+                placeholder="Add context, requirements, or notes..."
+              />
+              <p className="dialog-actor">
+                This change will be recorded as <strong>{actor}</strong>.
+              </p>
+              <div className="dialog-actions">
+                <button type="button" onClick={() => setShowCreate(false)}>
+                  Cancel
+                </button>
+                <button type="submit" disabled={busy || !actor}>
+                  Create task
+                </button>
+              </div>
+            </form>
+          </section>
+        </div>
+      )}
 
       {/* The selected task uses either the edit modal or the history side panel. */}
-      {selected && <div className={`overlay ${panelMode === "edit" ? "create-overlay" : ""}`} onClick={() => setSelected(null)}>
-        {panelMode === "edit" ? <section className="create-dialog" role="dialog" aria-modal="true" aria-labelledby="edit-task-title" onClick={(event) => event.stopPropagation()}>
-          <div className="dialog-heading"><div><p className="eyebrow">EDIT TASK</p><h2 id="edit-task-title">Update task details</h2></div><button type="button" onClick={() => setSelected(null)} aria-label="Close edit dialog">×</button></div>
-          {!selected.deletedAt && <form className="edit-task" onSubmit={updateDetails}>
-          <label htmlFor="edit-title">Task title</label>
-          <input id="edit-title" value={editTitle} onChange={(event) => setEditTitle(event.target.value)} maxLength={120} required />
-          <label htmlFor="edit-description">Description</label>
-          <textarea id="edit-description" value={editDescription} onChange={(event) => setEditDescription(event.target.value)} maxLength={1000} rows={5} placeholder="Add task details..." />
-          <p className="dialog-actor">Changes will be recorded as <strong>{actor}</strong>.</p>
-          <div className="dialog-actions"><button type="button" onClick={() => setSelected(null)}>Cancel</button><button type="submit" disabled={busy}>Save changes</button></div>
-        </form>}
-        </section> : <aside className="history" aria-label="Task history" onClick={(event) => event.stopPropagation()}>
-          <div className="history-heading"><div><p className="eyebrow">AUDIT LOG</p><h2>{selected.title}</h2><p>{selected.deletedAt ? "Task deleted" : `Status: ${labels[selected.status]}`}</p></div><button type="button" onClick={() => setSelected(null)} aria-label="Close history">×</button></div>
-          <ol className="timeline">{logs.map((log) => <li key={log.id}><p><strong>{log.actor}</strong> {describe(log)}</p><time dateTime={log.occurredAt}>{new Date(log.occurredAt).toLocaleString("en-US", { dateStyle: "medium", timeStyle: "short" })}</time></li>)}</ol>
-        </aside>}
-      </div>}
+      {selected && (
+        <div
+          className={`overlay ${panelMode === "edit" ? "create-overlay" : ""}`}
+          onClick={() => setSelected(null)}
+        >
+          {panelMode === "edit" ? (
+            <section
+              className="create-dialog"
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="edit-task-title"
+              onClick={(event) => event.stopPropagation()}
+            >
+              <div className="dialog-heading">
+                <div>
+                  <p className="eyebrow">EDIT TASK</p>
+                  <h2 id="edit-task-title">Update task details</h2>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setSelected(null)}
+                  aria-label="Close edit dialog"
+                >
+                  ×
+                </button>
+              </div>
+              {!selected.deletedAt && (
+                <form className="edit-task" onSubmit={updateDetails}>
+                  <label htmlFor="edit-title">Task title</label>
+                  <input
+                    id="edit-title"
+                    value={editTitle}
+                    onChange={(event) => setEditTitle(event.target.value)}
+                    maxLength={120}
+                    required
+                  />
+                  <label htmlFor="edit-description">Description</label>
+                  <textarea
+                    id="edit-description"
+                    value={editDescription}
+                    onChange={(event) => setEditDescription(event.target.value)}
+                    maxLength={1000}
+                    rows={5}
+                    placeholder="Add task details..."
+                  />
+                  <p className="dialog-actor">
+                    Changes will be recorded as <strong>{actor}</strong>.
+                  </p>
+                  <div className="dialog-actions">
+                    <button type="button" onClick={() => setSelected(null)}>
+                      Cancel
+                    </button>
+                    <button type="submit" disabled={busy}>
+                      Save changes
+                    </button>
+                  </div>
+                </form>
+              )}
+            </section>
+          ) : (
+            <aside
+              className="history"
+              aria-label="Task history"
+              onClick={(event) => event.stopPropagation()}
+            >
+              <div className="history-heading">
+                <div>
+                  <p className="eyebrow">AUDIT LOG</p>
+                  <h2>{selected.title}</h2>
+                  <p>
+                    {selected.deletedAt
+                      ? "Task deleted"
+                      : `Status: ${labels[selected.status]}`}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setSelected(null)}
+                  aria-label="Close history"
+                >
+                  ×
+                </button>
+              </div>
+              <ol className="timeline">
+                {logs.map((log) => (
+                  <li key={log.id}>
+                    <p>
+                      <strong>{log.actor}</strong> {describe(log)}
+                    </p>
+                    <time dateTime={log.occurredAt}>
+                      {new Date(log.occurredAt).toLocaleString("en-US", {
+                        dateStyle: "medium",
+                        timeStyle: "short",
+                      })}
+                    </time>
+                  </li>
+                ))}
+              </ol>
+            </aside>
+          )}
+        </div>
+      )}
     </main>
   );
 }

@@ -31,7 +31,10 @@ function broadcast(event: string, payload: unknown) {
 }
 
 function publishCursors() {
-  broadcast("cursors", [...cursors.values()].map(({ expiresAt: _expiresAt, ...cursor }) => cursor));
+  broadcast(
+    "cursors",
+    [...cursors.values()].map(({ expiresAt: _expiresAt, ...cursor }) => cursor),
+  );
 }
 
 export function broadcastTaskChange() {
@@ -60,17 +63,22 @@ presenceRouter.get("/", (request, response) => {
     "Content-Type": "text/event-stream",
     "Cache-Control": "no-cache, no-transform",
     Connection: "keep-alive",
-    "X-Accel-Buffering": "no"
+    "X-Accel-Buffering": "no",
   });
   response.flushHeaders();
   subscribers.add(response);
-  send(response, "cursors", [...cursors.values()].map(({ expiresAt: _expiresAt, ...cursor }) => cursor));
+  send(
+    response,
+    "cursors",
+    [...cursors.values()].map(({ expiresAt: _expiresAt, ...cursor }) => cursor),
+  );
   request.on("close", () => subscribers.delete(response));
 });
 
 // POST /api/presence — publishes a cursor position or ends a drag session.
 presenceRouter.post("/", (request, response) => {
-  const { clientId, actor, taskId, x, y, active, sequence } = request.body ?? {};
+  const { clientId, actor, taskId, x, y, active, sequence } =
+    request.body ?? {};
   if (typeof clientId !== "string" || !/^[0-9a-f-]{36}$/i.test(clientId)) {
     response.status(400).json({ error: "Invalid client id" });
     return;
@@ -85,19 +93,43 @@ presenceRouter.post("/", (request, response) => {
     return;
   }
   if (active === false) {
-    versions.set(clientId, { sequence, expiresAt: Date.now() + cursorLifetimeMs });
+    versions.set(clientId, {
+      sequence,
+      expiresAt: Date.now() + cursorLifetimeMs,
+    });
     if (cursors.delete(clientId)) publishCursors();
     response.status(204).send();
     return;
   }
-  if (!actors.some((name) => name === actor) || typeof taskId !== "string" || taskId.length > 100 ||
-      typeof x !== "number" || !Number.isFinite(x) || x < 0 || x > 1 ||
-      typeof y !== "number" || !Number.isFinite(y) || y < 0 || y > 1) {
+  if (
+    !actors.some((name) => name === actor) ||
+    typeof taskId !== "string" ||
+    taskId.length > 100 ||
+    typeof x !== "number" ||
+    !Number.isFinite(x) ||
+    x < 0 ||
+    x > 1 ||
+    typeof y !== "number" ||
+    !Number.isFinite(y) ||
+    y < 0 ||
+    y > 1
+  ) {
     response.status(400).json({ error: "Invalid cursor data" });
     return;
   }
-  versions.set(clientId, { sequence, expiresAt: Date.now() + cursorLifetimeMs });
-  cursors.set(clientId, { clientId, actor, taskId, x, y, sequence, expiresAt: Date.now() + cursorLifetimeMs });
+  versions.set(clientId, {
+    sequence,
+    expiresAt: Date.now() + cursorLifetimeMs,
+  });
+  cursors.set(clientId, {
+    clientId,
+    actor,
+    taskId,
+    x,
+    y,
+    sequence,
+    expiresAt: Date.now() + cursorLifetimeMs,
+  });
   publishCursors();
   response.status(204).send();
 });
