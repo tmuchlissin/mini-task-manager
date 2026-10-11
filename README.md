@@ -86,17 +86,17 @@ Browser React → API Express → PostgreSQL (tasks dan audit_logs)
 
 ### API utama
 
-| Method | Endpoint | Kegunaan |
-| --- | --- | --- |
-| `GET` | `/api/actors` | Mengambil daftar actor pada dropdown. |
-| `GET` | `/api/tasks` | Mengambil task aktif. Tambahkan `?includeDeleted=true` untuk melihat task yang dihapus. |
-| `POST` | `/api/tasks` | Membuat task baru dengan judul, deskripsi opsional, dan actor. Status awal selalu `to_do`. |
-| `PUT` | `/api/tasks/:id` | Mengubah judul dan deskripsi task. |
-| `PUT` | `/api/tasks/:id/status` | Memindahkan task satu tahap ke status berikutnya. |
-| `DELETE` | `/api/tasks/:id` | Menandai task sebagai dihapus tanpa menghapus data secara fisik. |
-| `GET` | `/api/tasks/:id/audit-logs` | Mengambil riwayat perubahan task secara kronologis. |
-| `GET` | `/api/presence` | Membuka koneksi SSE untuk kursor dan perubahan board real-time. |
-| `POST` | `/api/presence` | Mengirim posisi kursor saat drag atau menutup sesi drag. |
+| Method   | Endpoint                    | Kegunaan                                                                                   |
+| -------- | --------------------------- | ------------------------------------------------------------------------------------------ |
+| `GET`    | `/api/actors`               | Mengambil daftar actor pada dropdown.                                                      |
+| `GET`    | `/api/tasks`                | Mengambil task aktif. Tambahkan `?includeDeleted=true` untuk melihat task yang dihapus.    |
+| `POST`   | `/api/tasks`                | Membuat task baru dengan judul, deskripsi opsional, dan actor. Status awal selalu `to_do`. |
+| `PUT`    | `/api/tasks/:id`            | Mengubah judul dan deskripsi task.                                                         |
+| `PUT`    | `/api/tasks/:id/status`     | Memindahkan task satu tahap ke status berikutnya.                                          |
+| `DELETE` | `/api/tasks/:id`            | Menandai task sebagai dihapus tanpa menghapus data secara fisik.                           |
+| `GET`    | `/api/tasks/:id/audit-logs` | Mengambil riwayat perubahan task secara kronologis.                                        |
+| `GET`    | `/api/presence`             | Membuka koneksi SSE untuk kursor dan perubahan board real-time.                            |
+| `POST`   | `/api/presence`             | Mengirim posisi kursor saat drag atau menutup sesi drag.                                   |
 
 ## Asumsi yang diambil
 
@@ -117,22 +117,22 @@ Browser React → API Express → PostgreSQL (tasks dan audit_logs)
 
 ## Trade-off yang dibuat
 
-Trade-off adalah keputusan yang memberikan keuntungan tertentu, tetapi juga memiliki konsekuensi. Keputusan dalam project ini adalah:
+Trade-off adalah pilihan yang memberikan keuntungan tertentu, tetapi juga memiliki konsekuensi. Pilihan yang diambil dalam project ini adalah:
 
-| Keputusan | Keuntungan | Konsekuensi |
-| --- | --- | --- |
-| Actor menggunakan tiga nama hardcoded | Implementasi cepat dan tidak perlu membuat login. | Actor belum membuktikan identitas pengguna sebenarnya. Production membutuhkan autentikasi. |
-| Task menggunakan soft delete | Task dan audit log tetap bisa dilihat setelah task dihapus. | Data yang sudah tidak aktif tetap tersimpan dan mungkin membutuhkan pembersihan berkala. |
-| Status hanya boleh maju satu tahap | Alur assignment selalu konsisten dan tidak dapat melompati proses. | User tidak dapat langsung memindahkan task ke status mana pun. |
-| Update yang sama dianggap idempotent | Request berulang tidak membuat audit log duplikat. | Sistem tidak mencatat request yang sebenarnya tidak mengubah data. |
-| Presence menggunakan SSE dan memory backend | Real-time sederhana tanpa Redis atau layanan tambahan. | Data hilang saat server restart dan tidak cocok untuk banyak instance backend. |
-| Menggunakan PostgreSQL/Neon | Transaksi dapat menjaga perubahan task dan audit log tetap sinkron. | Perlu mengelola koneksi database dan menjalankan migrasi. |
-| Query SQL ditulis langsung menggunakan `pg` | Dependency sedikit dan query serta transaksi terlihat jelas. | Query harus dirawat manual; belum mendapat kemudahan ORM. |
-| Drag-and-drop menjadi interaksi utama | Board terasa natural seperti aplikasi kanban. | Perangkat tertentu kurang nyaman memakai drag-and-drop, sehingga tersedia tombol status sebagai fallback. |
-| Validasi utama dilakukan di backend | Backend menjadi sumber kebenaran meskipun request berasal dari client berbeda. | Feedback awal di UI tidak selengkap jika semua validasi dilakukan secara lokal. |
-| Route masih sederhana dalam `app.ts` | Mudah dibaca dan sesuai scope take-home. | Jika fitur bertambah, route, service, dan repository perlu dipisahkan. |
-| Belum ada pagination, role, rate limiting, atau retry queue | Scope tetap kecil dan fokus pada requirement utama. | Fitur tersebut perlu ditambahkan ketika data dan jumlah user meningkat. |
-| Testing memakai `DATABASE_URL` | Tes memvalidasi perilaku API dan database yang sebenarnya. | Environment testing harus memakai database terpisah agar tidak mengganggu production. |
+| Pilihan yang diambil                                       | Keuntungan                                                                     | Konsekuensi                                                                                               |
+| ----------------------------------------------------------- | ------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------- |
+| Actor menggunakan tiga nama hardcoded                       | Implementasi cepat dan tidak perlu membuat login.                              | Actor belum membuktikan identitas pengguna sebenarnya. Production membutuhkan autentikasi.                |
+| Task menggunakan soft delete                                | Task dan audit log tetap bisa dilihat setelah task dihapus.                    | Data yang sudah tidak aktif tetap tersimpan dan mungkin membutuhkan pembersihan berkala.                  |
+| Status hanya boleh maju satu tahap                          | Alur assignment selalu konsisten dan tidak dapat melompati proses.             | User tidak dapat langsung memindahkan task ke status mana pun.                                            |
+| Update yang sama dianggap idempotent                        | Request berulang tidak membuat audit log duplikat.                             | Sistem tidak mencatat request yang sebenarnya tidak mengubah data.                                        |
+| Presence menggunakan SSE dan memory backend                 | Real-time sederhana tanpa Redis atau layanan tambahan.                         | Data hilang saat server restart dan tidak cocok untuk banyak instance backend.                            |
+| Menggunakan PostgreSQL/Neon                                 | Transaksi dapat menjaga perubahan task dan audit log tetap sinkron.            | Perlu mengelola koneksi database dan menjalankan migrasi.                                                 |
+| Query SQL ditulis langsung menggunakan `pg`                 | Dependency sedikit dan query serta transaksi terlihat jelas.                   | Query harus dirawat manual; belum mendapat kemudahan ORM.                                                 |
+| Drag-and-drop menjadi interaksi utama                       | Board terasa natural seperti aplikasi kanban.                                  | Perangkat tertentu kurang nyaman memakai drag-and-drop, sehingga tersedia tombol status sebagai fallback. |
+| Validasi utama dilakukan di backend                         | Backend menjadi sumber kebenaran meskipun request berasal dari client berbeda. | Feedback awal di UI tidak selengkap jika semua validasi dilakukan secara lokal.                           |
+| Route masih sederhana dalam `app.ts`                        | Mudah dibaca dan sesuai scope take-home.                                       | Jika fitur bertambah, route, service, dan repository perlu dipisahkan.                                    |
+| Belum ada pagination, role, rate limiting, atau retry queue | Scope tetap kecil dan fokus pada requirement utama.                            | Fitur tersebut perlu ditambahkan ketika data dan jumlah user meningkat.                                   |
+| Testing memakai `DATABASE_URL`                              | Tes memvalidasi perilaku API dan database yang sebenarnya.                     | Environment testing harus memakai database terpisah agar tidak mengganggu production.                     |
 
 ## Jawaban pertanyaan take-home
 
