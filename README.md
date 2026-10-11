@@ -119,7 +119,7 @@ Browser React → API Express → PostgreSQL (tasks dan audit_logs)
 
 Trade-off adalah pilihan yang memberikan keuntungan tertentu, tetapi juga memiliki konsekuensi. Pilihan yang diambil dalam project ini adalah:
 
-| Pilihan yang diambil                                       | Keuntungan                                                                     | Konsekuensi                                                                                               |
+| Pilihan yang diambil                                        | Keuntungan                                                                     | Konsekuensi                                                                                               |
 | ----------------------------------------------------------- | ------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------- |
 | Actor menggunakan tiga nama hardcoded                       | Implementasi cepat dan tidak perlu membuat login.                              | Actor belum membuktikan identitas pengguna sebenarnya. Production membutuhkan autentikasi.                |
 | Task menggunakan soft delete                                | Task dan audit log tetap bisa dilihat setelah task dihapus.                    | Data yang sudah tidak aktif tetap tersimpan dan mungkin membutuhkan pembersihan berkala.                  |
@@ -131,10 +131,9 @@ Trade-off adalah pilihan yang memberikan keuntungan tertentu, tetapi juga memili
 | Drag-and-drop menjadi interaksi utama                       | Board terasa natural seperti aplikasi kanban.                                  | Perangkat tertentu kurang nyaman memakai drag-and-drop, sehingga tersedia tombol status sebagai fallback. |
 | Validasi utama dilakukan di backend                         | Backend menjadi sumber kebenaran meskipun request berasal dari client berbeda. | Feedback awal di UI tidak selengkap jika semua validasi dilakukan secara lokal.                           |
 | Route masih sederhana dalam `app.ts`                        | Mudah dibaca dan sesuai scope take-home.                                       | Jika fitur bertambah, route, service, dan repository perlu dipisahkan.                                    |
-| Belum ada pagination, role, rate limiting, atau retry queue | Scope tetap kecil dan fokus pada requirement utama.                            | Fitur tersebut perlu ditambahkan ketika data dan jumlah user meningkat.                                   |
-| Testing memakai `DATABASE_URL`                              | Tes memvalidasi perilaku API dan database yang sebenarnya.                     | Environment testing harus memakai database terpisah agar tidak mengganggu production.                     |
+| Belum ada pagination, role, rate limiting, atau retry queue | Scope tetap kecil dan fokus pada requirement utama.                            | Pagination dibutuhkan saat data sangat banyak; role dan rate limiting dibutuhkan saat user bertambah; retry queue dibutuhkan jika ada pekerjaan background atau integrasi eksternal yang perlu dicoba ulang. |
 
-## Jawaban pertanyaan take-home
+## Jawaban pertanyaan take-home-test
 
 **Bagaimana audit log dijaga agar tidak termodifikasi?** API hanya menyediakan operasi baca dan insert. Trigger database menolak `UPDATE`, `DELETE`, dan `TRUNCATE` pada audit log. Task memakai soft delete, dan foreign key membatasi penghapusan fisik task yang memiliki log. Perubahan status dan insert log dilakukan dalam satu transaksi; kegagalan salah satu membatalkan keduanya. Administrator database yang dapat mengubah skema atau menonaktifkan trigger tetap mempunyai kuasa penuh. Untuk produksi perlu pemisahan role database dan kontrol akses yang lebih ketat.
 
