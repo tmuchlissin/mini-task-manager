@@ -45,7 +45,7 @@ input:focus, select:focus, textarea:focus { outline: 2px solid #35b7c6; outline-
 .live-cursor { align-items: flex-start; display: flex; filter: drop-shadow(0 2px 4px #351d5738); gap: 2px; pointer-events: none; position: absolute; transition: left 70ms linear, top 70ms linear; z-index: 5; }
 .live-cursor svg { flex: none; }
 .live-cursor span { border: 2px solid white; border-radius: 999px; color: white; font-size: 11px; font-weight: 700; max-width: 180px; overflow: hidden; padding: 3px 8px; text-overflow: ellipsis; white-space: nowrap; }
-.board-toolbar { align-items: flex-start; display: flex; flex-direction: column; gap: 9px; margin-bottom: 14px; }
+.board-toolbar { align-items: flex-start; display: flex; flex-direction: column; gap: 16px; margin-bottom: 20px; }
 .board-controls { align-items: end; display: flex; flex: none; gap: 12px; }
 .board-hint { color: #666b75; font-size: 13px; margin: 0; text-align: left; }
 .mobile-hint { display: none; }
