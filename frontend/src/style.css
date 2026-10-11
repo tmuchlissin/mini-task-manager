@@ -25,7 +25,7 @@ select { min-width: 170px; }
 input:focus, select:focus { outline: 2px solid #35b7c6; outline-offset: 1px; }
 .form-row button, .card-actions button:not(.text-button):not(.delete-button) { background: #7148c4; border: 1px solid #7148c4; border-radius: 8px; color: white; font-size: 13px; font-weight: 700; padding: 9px 13px; white-space: nowrap; }
 .form-row button { background: linear-gradient(110deg, #087f98, #6643b8); border-color: #087f98; }
-.board { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); align-items: start; gap: 16px; position: relative; }
+.board { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); align-items: stretch; gap: 16px; position: relative; }
 .live-cursor { align-items: flex-start; display: flex; filter: drop-shadow(0 2px 4px #351d5738); gap: 2px; pointer-events: none; position: absolute; transition: left 70ms linear, top 70ms linear; z-index: 5; }
 .live-cursor svg { flex: none; }
 .live-cursor span { border: 2px solid white; border-radius: 999px; color: white; font-size: 11px; font-weight: 700; max-width: 180px; overflow: hidden; padding: 3px 8px; text-overflow: ellipsis; white-space: nowrap; }
