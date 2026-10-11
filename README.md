@@ -10,12 +10,14 @@ Prasyarat: Node.js 20+, npm, dan PostgreSQL (misalnya Neon).
 
    ```env
    DATABASE_URL=postgresql://user:password@host/database?sslmode=require
+   PORT=3001
    ```
 
    Buat `frontend/.env` dengan URL backend tanpa slash di akhir:
 
    ```env
    VITE_API_URL=http://localhost:3001
+   VITE_PORT=5173
    ```
 
 2. Pasang dependency dan siapkan tabel:
@@ -31,7 +33,7 @@ Prasyarat: Node.js 20+, npm, dan PostgreSQL (misalnya Neon).
    npm run dev
    ```
 
-Frontend: http://localhost:5173. Backend: http://localhost:3001. Vite meneruskan `/api` ke URL pada `VITE_API_URL`. Untuk production, ganti nilainya dengan URL backend production. Untuk menjalankan secara terpisah, gunakan `npm run dev -w frontend` dan `npm run dev -w backend`.
+Frontend berjalan pada port `VITE_PORT`, backend pada port `PORT`. Vite meneruskan `/api` ke URL pada `VITE_API_URL`. Untuk production, ganti `VITE_API_URL` dengan URL backend production. Untuk menjalankan secara terpisah, gunakan `npm run dev -w frontend` dan `npm run dev -w backend`.
 
 Jalankan satu instance backend dan frontend saja. Jika port `3001` atau `5173` sedang dipakai proses lama, hentikan proses tersebut sebelum menjalankan `npm run dev` kembali. Proses lama dapat membuat UI baru memanggil API lama dan menerima 404; script `dev` kini berhenti saat salah satu server gagal dimulai.
 
