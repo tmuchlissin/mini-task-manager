@@ -2,8 +2,6 @@
 
 Task board sederhana untuk tim internal. Task bergerak berurutan melalui **To Do → Pending → In Progress → Done**. Setiap perubahan tercatat bersama actor dan waktu kejadian.
 
-Untuk panduan presentasi dan penjelasan kode dari dasar, lihat [PRESENTATION_GUIDE.md](PRESENTATION_GUIDE.md).
-
 ## Cara Menjalankan Aplikasi (Lokal)
 
 Prasyarat: Node.js 20+, npm, dan PostgreSQL (misalnya Neon).
