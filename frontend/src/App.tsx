@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useState, type DragEvent, type FormEvent } from "react";
 
 const statuses = ["to_do", "pending", "in_progress", "done"] as const;
 type Status = (typeof statuses)[number];
@@ -35,6 +35,8 @@ export function App() {
   const [busy, setBusy] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [draggedId, setDraggedId] = useState<string | null>(null);
+  const [overStatus, setOverStatus] = useState<Status | null>(null);
 
   async function refresh() {
     const rows = await api<Task[]>("/api/tasks?includeDeleted=true");
@@ -65,14 +67,49 @@ export function App() {
     });
   }
 
-  function advance(task: Task) {
-    const next = statuses[statuses.indexOf(task.status) + 1];
-    if (!next) return;
+  function moveToStatus(task: Task, next: Status) {
+    if (busy || statuses.indexOf(next) !== statuses.indexOf(task.status) + 1) return;
     void run(async () => {
       await api<Task>(`/api/tasks/${task.id}/status`, { method: "PUT", body: JSON.stringify({ status: next, actor }) });
       await refresh();
       if (selected?.id === task.id) setLogs(await api<AuditLog[]>(`/api/tasks/${task.id}/audit-logs`));
     });
+  }
+
+  function advance(task: Task) {
+    const next = statuses[statuses.indexOf(task.status) + 1];
+    if (next) moveToStatus(task, next);
+  }
+
+  function canDrop(task: Task | undefined, target: Status): task is Task {
+    return !!task && !busy && statuses.indexOf(target) === statuses.indexOf(task.status) + 1;
+  }
+
+  function startDrag(event: DragEvent<HTMLElement>, task: Task) {
+    event.dataTransfer.setData("application/x-mini-task-id", task.id);
+    event.dataTransfer.effectAllowed = "move";
+    setDraggedId(task.id);
+  }
+
+  function endDrag() {
+    setDraggedId(null);
+    setOverStatus(null);
+  }
+
+  function dragOver(event: DragEvent<HTMLElement>, target: Status) {
+    const task = tasks.find((item) => item.id === draggedId);
+    if (!canDrop(task, target)) return;
+    event.preventDefault();
+    event.dataTransfer.dropEffect = "move";
+    if (overStatus !== target) setOverStatus(target);
+  }
+
+  function drop(event: DragEvent<HTMLElement>, target: Status) {
+    event.preventDefault();
+    const id = event.dataTransfer.getData("application/x-mini-task-id");
+    const task = tasks.find((item) => item.id === id);
+    endDrag();
+    if (canDrop(task, target)) moveToStatus(task, target);
   }
 
   function remove(task: Task) {
@@ -112,13 +149,23 @@ export function App() {
         <div className="actor-control"><label htmlFor="actor">Bertindak sebagai</label><select id="actor" value={actor} onChange={(event) => setActor(event.target.value)} disabled={busy}>{actors.map((name) => <option key={name}>{name}</option>)}</select></div>
       </section>
 
+      <p className="board-hint">Geser kartu ke kolom berikutnya untuk mengubah status. Actor yang dipilih akan tercatat di riwayat.</p>
+
       {error && <p className="error" role="alert">{error} <button type="button" onClick={() => void refresh().catch((cause: Error) => setError(cause.message))}>Coba muat ulang</button></p>}
       {loading ? <p>Memuat task...</p> : <section className="board" aria-label="Task board">
         {statuses.map((status) => {
           const columnTasks = active.filter((task) => task.status === status);
-          return <div className={`column ${status}`} key={status}>
+          const draggingTask = tasks.find((task) => task.id === draggedId);
+          const eligible = canDrop(draggingTask, status);
+          return <div className={`column ${status}${eligible ? " drop-eligible" : ""}${overStatus === status ? " drop-over" : ""}`} key={status}
+            onDragOver={(event) => dragOver(event, status)}
+            onDragLeave={(event) => { if (!event.currentTarget.contains(event.relatedTarget as Node)) setOverStatus(null); }}
+            onDrop={(event) => drop(event, status)}>
             <div className="column-heading"><h2>{labels[status]}</h2><span>{columnTasks.length}</span></div>
-            <div className="cards">{columnTasks.length ? columnTasks.map((task) => <article className="card" key={task.id}>
+            <div className="cards">{columnTasks.length ? columnTasks.map((task) => <article className={`card${draggedId === task.id ? " dragging" : ""}`} key={task.id}
+              draggable={!busy && status !== "done"}
+              onDragStart={(event) => startDrag(event, task)}
+              onDragEnd={endDrag}>
               <h3>{task.title}</h3><p>Dibuat {new Date(task.createdAt).toLocaleDateString("id-ID")}</p>
               <div className="card-actions">
                 <button type="button" className="text-button" onClick={() => void openHistory(task)}>Riwayat</button>

@@ -20,7 +20,10 @@ select { min-width: 170px; }
 input:focus, select:focus { outline: 2px solid #93b5f2; outline-offset: 1px; }
 .form-row button, .card-actions button:not(.text-button):not(.delete-button) { background: #3168cb; border: 1px solid #3168cb; border-radius: 8px; color: white; font-size: 13px; font-weight: 700; padding: 9px 13px; white-space: nowrap; }
 .board { display: grid; grid-template-columns: repeat(4, minmax(235px, 1fr)); gap: 16px; overflow-x: auto; }
+.board-hint { color: #6b7890; font-size: 13px; margin: -12px 0 18px; }
 .column { background: #edf1f7; border: 1px solid #e3e9f2; border-radius: 12px; min-height: 330px; padding: 15px; }
+.column.drop-eligible { border: 2px dashed #80a8e8; padding: 14px; }
+.column.drop-over { background: #e4edfc; border-color: #3168cb; }
 .column-heading { align-items: center; display: flex; justify-content: space-between; margin-bottom: 18px; }
 .column-heading h2 { font-size: 14px; letter-spacing: .01em; margin: 0; }
 .column-heading span { background: #dfe6f1; border-radius: 5px; color: #63718b; font-size: 12px; font-weight: 700; min-width: 24px; padding: 3px 7px; text-align: center; }
@@ -29,6 +32,9 @@ input:focus, select:focus { outline: 2px solid #93b5f2; outline-offset: 1px; }
 .done .column-heading h2 { color: #2d8b65; }
 .cards { display: grid; gap: 10px; }
 .card { background: white; border: 1px solid #e2e8f1; border-radius: 9px; box-shadow: 0 2px 5px #1b365b0b; padding: 14px; }
+.card[draggable="true"] { cursor: grab; }
+.card.dragging { opacity: .45; }
+.card[draggable="true"]:active { cursor: grabbing; }
 .card h3 { font-size: 14px; line-height: 1.45; margin: 0 0 8px; overflow-wrap: anywhere; }
 .card > p, .empty { color: #8290a5; font-size: 12px; margin: 0; }
 .empty { padding: 8px 2px; }

@@ -38,7 +38,7 @@ React (frontend/src/App.tsx) → Express (backend/src/app.ts) → PostgreSQL
                                                         ↳ tasks + audit_logs
 ```
 
-Frontend menampilkan empat kolom, form pembuatan, dropdown actor, tombol untuk pindah ke status berikutnya, panel riwayat, serta daftar task yang dihapus. Backend memvalidasi input dan urutan status. `backend/schema.sql` berisi skema dan trigger audit log; `backend/src/migrate.ts` menerapkannya.
+Frontend menampilkan empat kolom, form pembuatan, dropdown actor, drag-and-drop atau tombol untuk pindah ke status berikutnya, panel riwayat, serta daftar task yang dihapus. Backend memvalidasi input dan urutan status. `backend/schema.sql` berisi skema dan trigger audit log; `backend/src/migrate.ts` menerapkannya.
 
 | Method | Endpoint | Fungsi |
 | --- | --- | --- |
@@ -55,7 +55,7 @@ Frontend menampilkan empat kolom, form pembuatan, dropdown actor, tombol untuk p
 - Actor dipilih dari tiga nama tetap. Brief tidak meminta autentikasi; pengguna lain masih bisa memilih nama yang sama.
 - Permintaan ke status yang sama berhasil tanpa menambah log. Perpindahan hanya satu tahap ke depan; kembali atau melompat menghasilkan `409`.
 - Delete memakai soft delete agar task dan audit log tetap dapat dibaca. Pembuatan dan penghapusan juga dicatat.
-- Board memakai tombol perpindahan status agar aturan urutan terlihat jelas.
+- Kartu dapat digeser hanya ke kolom berikutnya. Tombol perpindahan status tetap tersedia untuk pengguna keyboard dan perangkat tanpa drag-and-drop. Keduanya memakai endpoint yang sama.
 - PostgreSQL/Neon memungkinkan status dan log ditulis dalam satu transaksi, dengan tambahan kebutuhan koneksi database dan migrasi.
 
 ## Jawaban pertanyaan take-home
