@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type DragEvent, type FormEvent } from "react";
 
+// The order is shared with the backend workflow: a task may move forward one step.
 const statuses = ["to_do", "pending", "in_progress", "done"] as const;
 type Status = (typeof statuses)[number];
 type Task = { id: string; title: string; description: string; status: Status; createdAt: string; updatedAt: string; deletedAt: string | null };
@@ -7,10 +8,12 @@ type AuditLog = { id: string; taskId: string; actor: string; action: "created" |
 type LiveCursor = { clientId: string; actor: string; taskId: string; x: number; y: number; sequence: number };
 const labels: Record<Status, string> = { to_do: "To Do", pending: "Pending", in_progress: "In Progress", done: "Done" };
 type Theme = "light" | "dark";
+// Vite injects this URL from frontend/.env; keeping it configurable supports deployment.
 const apiBaseUrl = ((import.meta as ImportMeta & { env?: { VITE_API_URL?: string } }).env?.VITE_API_URL ?? "").replace(/\/$/, "");
 const apiUrl = (path: string) => `${apiBaseUrl}${path}`;
 
 function initialTheme(): Theme {
+  // Restore the user's preference, then fall back to the operating-system theme.
   try {
     const saved = window.localStorage.getItem("mini-task-theme");
     if (saved === "light" || saved === "dark") return saved;
@@ -19,6 +22,7 @@ function initialTheme(): Theme {
 }
 
 async function api<T>(url: string, options?: RequestInit): Promise<T> {
+  // One typed request helper keeps API error handling consistent across the UI.
   const response = await fetch(apiUrl(url), {
     ...options,
     headers: { "Content-Type": "application/json", ...options?.headers }
@@ -31,6 +35,7 @@ async function api<T>(url: string, options?: RequestInit): Promise<T> {
 }
 
 function describe(log: AuditLog): string {
+  // Convert database audit records into readable sentences for the timeline.
   if (log.action === "created") return `created task “${log.taskTitle}”`;
   if (log.action === "deleted") return `deleted task “${log.taskTitle}”`;
   if (log.action === "title_changed") return `renamed “${log.previousTitle}” to “${log.taskTitle}”`;
@@ -45,6 +50,8 @@ function describe(log: AuditLog): string {
 }
 
 export function App() {
+  // Server data and UI state are kept separate so each interaction updates only
+  // the part of the board that needs to change.
   const [theme, setTheme] = useState<Theme>(initialTheme);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [actors, setActors] = useState<string[]>([]);
@@ -70,12 +77,14 @@ export function App() {
   const cursorSequence = useRef(0);
 
   useEffect(() => {
+    // Apply the selected theme to the document and persist it for the next visit.
     document.documentElement.dataset.theme = theme;
     try { window.localStorage.setItem("mini-task-theme", theme); }
     catch { /* The selected theme still applies for this session. */ }
   }, [theme]);
 
   useEffect(() => {
+    // Escape closes the currently open modal or history panel.
     function closeOverlays(event: KeyboardEvent) {
       if (event.key !== "Escape") return;
       if (showCreate) setShowCreate(false);
@@ -86,12 +95,14 @@ export function App() {
   }, [selected, showCreate]);
 
   async function refresh() {
+    // Reload tasks after a mutation or a real-time notification from another user.
     const rows = await api<Task[]>("/api/tasks?includeDeleted=true");
     setTasks(rows);
     setSelected((current) => current ? rows.find((task) => task.id === current.id) ?? null : null);
   }
 
   useEffect(() => {
+    // Load the initial board and actor list in parallel when the app mounts.
     Promise.all([api<Task[]>("/api/tasks?includeDeleted=true"), api<string[]>("/api/actors")])
       .then(([rows, users]) => { setTasks(rows); setActors(users); setActor(users[0] ?? ""); })
       .catch((cause: Error) => setError(cause.message))
@@ -99,6 +110,7 @@ export function App() {
   }, []);
 
   useEffect(() => {
+    // SSE keeps cursors and task changes synchronized between open browsers.
     const stream = new EventSource(apiUrl("/api/presence"));
     stream.addEventListener("cursors", (event) => {
       const cursors = JSON.parse(event.data) as LiveCursor[];
@@ -117,6 +129,7 @@ export function App() {
   }, []);
 
   function stopPresence() {
+    // Tell other clients that this browser is no longer dragging a task.
     void fetch(apiUrl("/api/presence"), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -126,6 +139,7 @@ export function App() {
   }
 
   function publishCursor(event: DragEvent<HTMLElement>, task: Task, force = false) {
+    // Normalize the cursor position to 0..1 so it works at any board size.
     const board = boardRef.current;
     if (!board || event.clientX <= 0 || event.clientY <= 0) return;
     const now = Date.now();
@@ -142,6 +156,7 @@ export function App() {
   }
 
   async function run(work: () => Promise<void>) {
+    // Wrap mutations with shared loading and error state.
     setBusy(true);
     setError("");
     try { await work(); } catch (cause) { setError(cause instanceof Error ? cause.message : "Terjadi kesalahan"); }
@@ -149,6 +164,7 @@ export function App() {
   }
 
   function create(event: FormEvent) {
+    // Submit the create modal to the backend, then refresh the board.
     event.preventDefault();
     void run(async () => {
       await api<Task>("/api/tasks", { method: "POST", body: JSON.stringify({ title, description, actor }) });
@@ -160,6 +176,7 @@ export function App() {
   }
 
   function moveToStatus(task: Task, next: Status) {
+    // Both the button and drag-and-drop use this single status transition path.
     if (busy || statuses.indexOf(next) !== statuses.indexOf(task.status) + 1) return;
     void run(async () => {
       await api<Task>(`/api/tasks/${task.id}/status`, { method: "PUT", body: JSON.stringify({ status: next, actor }) });
@@ -169,15 +186,18 @@ export function App() {
   }
 
   function advance(task: Task) {
+    // Resolve the next status from the ordered workflow.
     const next = statuses[statuses.indexOf(task.status) + 1];
     if (next) moveToStatus(task, next);
   }
 
   function canDrop(task: Task | undefined, target: Status): task is Task {
+    // A drop is valid only when it moves exactly one step forward.
     return !!task && !busy && statuses.indexOf(target) === statuses.indexOf(task.status) + 1;
   }
 
   function startDrag(event: DragEvent<HTMLElement>, task: Task) {
+    // Store the task id in the browser drag payload and start live presence.
     event.dataTransfer.setData("application/x-mini-task-id", task.id);
     event.dataTransfer.effectAllowed = "move";
     setDraggedId(task.id);
@@ -191,6 +211,7 @@ export function App() {
   }
 
   function dragOver(event: DragEvent<HTMLElement>, target: Status) {
+    // Highlight only columns that accept the dragged task.
     const task = tasks.find((item) => item.id === draggedId);
     if (task) publishCursor(event, task);
     if (!canDrop(task, target)) return;
@@ -200,6 +221,7 @@ export function App() {
   }
 
   function drop(event: DragEvent<HTMLElement>, target: Status) {
+    // Read the dragged task id and reuse the same validated transition function.
     event.preventDefault();
     const id = event.dataTransfer.getData("application/x-mini-task-id");
     const task = tasks.find((item) => item.id === id);
@@ -208,6 +230,7 @@ export function App() {
   }
 
   function remove(task: Task) {
+    // Deletion is confirmed in the UI, then handled as a soft delete by the API.
     if (!window.confirm(`Delete “${task.title}”? Its history will be preserved.`)) return;
     void run(async () => {
       await api<void>(`/api/tasks/${task.id}`, { method: "DELETE", body: JSON.stringify({ actor }) });
@@ -217,6 +240,7 @@ export function App() {
   }
 
   async function openEditor(task: Task) {
+    // Clicking the card body opens the edit modal, not the audit history.
     setSelected(task);
     setPanelMode("edit");
     setEditTitle(task.title);
@@ -225,6 +249,7 @@ export function App() {
   }
 
   async function openHistory(task: Task) {
+    // History is loaded only when the user explicitly clicks History.
     setSelected(task);
     setPanelMode("history");
     setLogs([]);
@@ -233,6 +258,7 @@ export function App() {
   }
 
   async function updateDetails(event: FormEvent) {
+    // Save title and description changes and refresh the selected task.
     event.preventDefault();
     if (!selected || selected.deletedAt) return;
     setBusy(true); setError("");
@@ -248,11 +274,13 @@ export function App() {
     finally { setBusy(false); }
   }
 
+  // Keep active and deleted tasks separate for the board and archive sections.
   const active = tasks.filter((task) => !task.deletedAt);
   const archived = tasks.filter((task) => task.deletedAt);
 
   return (
     <main>
+      {/* Header: title, active-task count, and theme control. */}
       <header className="page-header">
         <div><p className="eyebrow">INTERNAL WORKSPACE</p><h1>Mini Task Manager</h1><p>Manage tasks and track every change clearly.</p></div>
         <div className="header-actions">
@@ -274,6 +302,7 @@ export function App() {
         </div>
       </header>
 
+      {/* Board controls: create a task and choose the actor for audit entries. */}
       <div className="board-toolbar">
         <div className="board-controls">
           <button type="button" className="create-trigger" onClick={() => setShowCreate(true)} disabled={!actor}><span aria-hidden="true">+</span> New task</button>
@@ -285,6 +314,7 @@ export function App() {
         <p className="board-hint"><span className="desktop-hint">Drag a card to the next column to change its status. </span><span className="mobile-hint">Use the button on a card to change its status. </span>The selected user will appear in its history.</p>
       </div>
 
+      {/* API errors are shown above the board with a retry action. */}
       {error && <p className="error" role="alert">{error} <button type="button" onClick={() => void refresh().catch((cause: Error) => setError(cause.message))}>Try again</button></p>}
       {loading ? <p>Loading tasks...</p> : <section className="board" ref={boardRef} aria-label="Task board">
         {statuses.map((status) => {
@@ -330,10 +360,12 @@ export function App() {
         })}
       </section>}
 
+      {/* Deleted tasks stay out of the board but remain available with their history. */}
       <section className="archive"><button type="button" className="archive-toggle" onClick={() => setShowArchived(!showArchived)} aria-expanded={showArchived}>{showArchived ? "Hide" : "Show"} deleted tasks ({archived.length})</button>
         {showArchived && <div className="archive-list">{archived.length ? archived.map((task) => <div key={task.id}><span>{task.title}</span><button type="button" className="text-button" onClick={() => void openHistory(task)}>View history</button></div>) : <p>No deleted tasks yet.</p>}</div>}
       </section>
 
+      {/* Create modal closes by Escape, close button, or clicking its backdrop. */}
       {showCreate && <div className="overlay create-overlay" onClick={() => setShowCreate(false)}><section className="create-dialog" role="dialog" aria-modal="true" aria-labelledby="create-title" onClick={(event) => event.stopPropagation()}>
         <div className="dialog-heading"><div><p className="eyebrow">CREATE TASK</p><h2 id="create-title">Add something to the board</h2></div><button type="button" onClick={() => setShowCreate(false)} aria-label="Close create task dialog">×</button></div>
         <form onSubmit={create}>
@@ -346,6 +378,7 @@ export function App() {
         </form>
       </section></div>}
 
+      {/* The selected task uses either the edit modal or the history side panel. */}
       {selected && <div className={`overlay ${panelMode === "edit" ? "create-overlay" : ""}`} onClick={() => setSelected(null)}>
         {panelMode === "edit" ? <section className="create-dialog" role="dialog" aria-modal="true" aria-labelledby="edit-task-title" onClick={(event) => event.stopPropagation()}>
           <div className="dialog-heading"><div><p className="eyebrow">EDIT TASK</p><h2 id="edit-task-title">Update task details</h2></div><button type="button" onClick={() => setSelected(null)} aria-label="Close edit dialog">×</button></div>
