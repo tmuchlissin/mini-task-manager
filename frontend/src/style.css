@@ -16,10 +16,10 @@ h1 { font-size: clamp(28px, 3vw, 38px); letter-spacing: -.04em; margin: 0 0 7px;
 .theme-toggle:focus-visible { outline: 2px solid #168ead; outline-offset: 2px; }
 .theme-toggle svg { height: 21px; width: 21px; }
 .toolbar { align-items: end; background: white; border: 1.5px solid #d8dce3; border-radius: 14px; box-shadow: 0 5px 24px #0000000d; display: flex; gap: 24px; justify-content: space-between; margin-bottom: 28px; padding: 20px; }
-.toolbar form { flex: 1; max-width: 700px; min-width: 0; }
+.toolbar form { flex: 1; min-width: 0; }
 .toolbar label { color: #565c66; display: block; font-size: 12px; font-weight: 700; margin-bottom: 8px; }
 .form-row { align-items: end; display: flex; gap: 10px; }
-.task-fields { display: grid; flex: 1; gap: 8px; min-width: 0; }
+.task-fields { display: grid; flex: 1; gap: 10px; grid-template-columns: minmax(180px, .9fr) minmax(240px, 1.1fr); min-width: 0; }
 input, select, textarea { background: #fff; border: 1px solid #dcdfe4; border-radius: 8px; color: #202124; min-height: 40px; padding: 9px 12px; }
 input { flex: 1; min-width: 120px; }
 textarea { resize: vertical; }
@@ -148,13 +148,15 @@ input:focus, select:focus, textarea:focus { outline: 2px solid #35b7c6; outline-
   .toolbar { align-items: stretch; flex-direction: column; gap: 16px; }
   .toolbar form { max-width: none; }
   .actor-control select { width: 100%; }
+  .task-fields { grid-template-columns: minmax(0, 1fr); }
+  .form-row { align-items: stretch; flex-direction: column; }
+  .form-row button { min-height: 44px; }
 }
 @media (max-width: 620px) {
   main { padding: 24px 16px 56px; }
   .page-header { align-items: flex-start; flex-direction: column; gap: 12px; margin-bottom: 22px; }
   .page-header h1 { font-size: 30px; }
   .toolbar { margin-bottom: 24px; padding: 16px; }
-  .form-row { flex-direction: column; }
   .form-row button, input, select { min-height: 44px; }
   .board { grid-template-columns: minmax(0, 1fr); gap: 12px; }
   .column { min-height: 130px; }
