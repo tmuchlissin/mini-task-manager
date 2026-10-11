@@ -200,10 +200,13 @@ input:focus, select:focus, textarea:focus { outline: 2px solid #35b7c6; outline-
   .page-header { align-items: flex-start; flex-direction: column; gap: 12px; margin-bottom: 22px; }
   .page-header h1 { font-size: 30px; }
   .header-actions { width: 100%; }
-  .board-controls { align-items: stretch; flex-direction: column; }
-  .header-actor { width: 100%; }
-  .header-actor select { flex: 1; min-width: 0; }
-  .create-trigger { flex: 1; justify-content: center; }
+  /* Keep the two board controls together on narrow screens, while the hint
+     remains on its own line below them. This avoids a tall empty toolbar. */
+  .board-controls { align-items: center; flex-direction: row; gap: 10px; width: 100%; }
+  .header-actor { flex: 1; min-width: 0; }
+  .header-actor label { font-size: 11px; }
+  .header-actor select { flex: 1; min-width: 0; width: 100%; }
+  .create-trigger { flex: 0 1 auto; justify-content: center; min-width: 0; }
   .toolbar { margin-bottom: 24px; padding: 16px; }
   .form-row button, input, select { min-height: 44px; }
   .board { grid-template-columns: minmax(0, 1fr); gap: 12px; }
@@ -220,6 +223,12 @@ input:focus, select:focus, textarea:focus { outline: 2px solid #35b7c6; outline-
   .history-heading h2 { font-size: 22px; }
   .create-overlay { padding: 12px; }
   .create-dialog { padding: 22px 18px; }
+}
+@media (max-width: 390px) {
+  .board-controls { align-items: stretch; flex-direction: column; }
+  .create-trigger, .header-actor { width: 100%; }
+  .create-trigger { min-height: 44px; }
+  .header-actor select { min-height: 44px; }
 }
 @media (prefers-reduced-motion: reduce) {
   .column, .card { transition: none; }
