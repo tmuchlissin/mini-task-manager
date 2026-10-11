@@ -38,14 +38,14 @@ React (frontend/src/App.tsx) → Express (backend/src/app.ts) → PostgreSQL
                                                         ↳ tasks + audit_logs
 ```
 
-Frontend menampilkan empat kolom, form pembuatan, dropdown actor, drag-and-drop atau tombol mobile untuk pindah ke status berikutnya, panel detail untuk mengedit judul dan melihat riwayat, serta daftar task yang dihapus. Tombol tema di header memilih mode terang/gelap; pilihannya disimpan di browser dan awalnya mengikuti preferensi sistem. Saat seseorang menggeser kartu, browser lain yang membuka board menampilkan kursor berlabel actor; perubahan task juga muncul otomatis. Backend memvalidasi input dan urutan status. `backend/schema.sql` berisi skema dan trigger audit log; `backend/src/migrate.ts` menerapkannya.
+Frontend menampilkan empat kolom, form pembuatan, dropdown actor, drag-and-drop atau tombol mobile untuk pindah ke status berikutnya, panel detail untuk mengedit judul dan deskripsi serta melihat riwayat, dan daftar task yang dihapus. Tombol tema di header memilih mode terang/gelap; pilihannya disimpan di browser dan awalnya mengikuti preferensi sistem. Saat seseorang menggeser kartu, browser lain yang membuka board menampilkan kursor berlabel actor; perubahan task juga muncul otomatis. Backend memvalidasi input dan urutan status. `backend/schema.sql` berisi skema dan trigger audit log; `backend/src/migrate.ts` menerapkannya.
 
 | Method | Endpoint | Fungsi |
 | --- | --- | --- |
 | `GET` | `/api/actors` | Daftar actor yang dapat dipilih |
 | `GET` | `/api/tasks` | Daftar task aktif; `?includeDeleted=true` menyertakan task terhapus |
-| `POST` | `/api/tasks` | Buat task di `to_do` dengan `title` dan `actor` |
-| `PUT` | `/api/tasks/:id` | Ubah judul task dengan `title` dan `actor` |
+| `POST` | `/api/tasks` | Buat task di `to_do` dengan `title`, `description` opsional, dan `actor` |
+| `PUT` | `/api/tasks/:id` | Ubah judul/deskripsi task dengan `title`, `description`, dan `actor` |
 | `PUT` | `/api/tasks/:id/status` | Ubah ke status berikutnya dengan `status` dan `actor` |
 | `DELETE` | `/api/tasks/:id` | Soft delete dengan `actor` |
 | `GET` | `/api/tasks/:id/audit-logs` | Riwayat kronologis, termasuk task terhapus |
@@ -54,10 +54,10 @@ Frontend menampilkan empat kolom, form pembuatan, dropdown actor, drag-and-drop 
 
 ## Asumsi dan trade-off
 
-- Struktur task: `id`, `title`, `status`, `createdAt`, `updatedAt`, `deletedAt`. Task baru selalu berstatus `to_do`.
+- Struktur task: `id`, `title`, `description`, `status`, `createdAt`, `updatedAt`, `deletedAt`. Task baru selalu berstatus `to_do`.
 - Actor dipilih dari tiga nama tetap. Brief tidak meminta autentikasi; pengguna lain masih bisa memilih nama yang sama.
 - Permintaan ke status yang sama berhasil tanpa menambah log. Perpindahan hanya satu tahap ke depan; kembali atau melompat menghasilkan `409`.
-- Delete memakai soft delete agar task dan audit log tetap dapat dibaca. Pembuatan, perubahan judul, dan penghapusan juga dicatat.
+- Delete memakai soft delete agar task dan audit log tetap dapat dibaca. Pembuatan, perubahan judul/deskripsi, dan penghapusan juga dicatat.
 - Kartu dapat digeser hanya ke kolom berikutnya. Tombol perpindahan status tetap tersedia pada layar kecil untuk perangkat tanpa drag-and-drop. Keduanya memakai endpoint yang sama.
 - Kursor real-time memakai Server-Sent Events dan disimpan sementara dalam memori backend, bukan audit log. Kursor hilang setelah drag selesai atau sekitar 5 detik tanpa pembaruan. Ini cocok untuk satu instance Express; beberapa instance membutuhkan pub/sub bersama seperti Redis.
 - PostgreSQL/Neon memungkinkan status dan log ditulis dalam satu transaksi, dengan tambahan kebutuhan koneksi database dan migrasi.

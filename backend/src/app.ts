@@ -36,7 +36,7 @@ app.get("/api/actors", (_request, response) => { response.json(actors); });
 app.get("/api/tasks", route(async (request, response) => {
   const includeDeleted = request.query.includeDeleted === "true";
   const result = await pool.query(
-    `SELECT id, title, status, created_at AS "createdAt", updated_at AS "updatedAt", deleted_at AS "deletedAt"
+    `SELECT id, title, description, status, created_at AS "createdAt", updated_at AS "updatedAt", deleted_at AS "deletedAt"
      FROM tasks WHERE ($1::boolean OR deleted_at IS NULL) ORDER BY created_at ASC, id ASC`,
     [includeDeleted]
   );
@@ -45,23 +45,24 @@ app.get("/api/tasks", route(async (request, response) => {
 
 app.post("/api/tasks", route(async (request, response) => {
   const title = typeof request.body?.title === "string" ? request.body.title.trim() : "";
+  const description = typeof request.body?.description === "string" ? request.body.description.trim() : "";
   const actor = request.body?.actor;
-  if (!title || title.length > 120 || !validActor(actor)) {
-    response.status(400).json({ error: "Title (1–120 characters) and a valid actor are required" });
+  if (!title || title.length > 120 || description.length > 1000 || !validActor(actor)) {
+    response.status(400).json({ error: "Title (1–120 characters), description (up to 1000 characters), and a valid actor are required" });
     return;
   }
   const client = await pool.connect();
   try {
     await client.query("BEGIN");
     const task = await client.query(
-      `INSERT INTO tasks(title) VALUES ($1)
-       RETURNING id, title, status, created_at AS "createdAt", updated_at AS "updatedAt", deleted_at AS "deletedAt"`,
-      [title]
+      `INSERT INTO tasks(title, description) VALUES ($1, $2)
+       RETURNING id, title, description, status, created_at AS "createdAt", updated_at AS "updatedAt", deleted_at AS "deletedAt"`,
+      [title, description]
     );
     await client.query(
-      `INSERT INTO audit_logs(task_id, actor, action, from_status, to_status, task_title)
-       VALUES ($1, $2, 'created', NULL, 'to_do', $3)`,
-      [task.rows[0].id, actor, title]
+      `INSERT INTO audit_logs(task_id, actor, action, from_status, to_status, task_title, task_description)
+       VALUES ($1, $2, 'created', NULL, 'to_do', $3, $4)`,
+      [task.rows[0].id, actor, title, description]
     );
     await client.query("COMMIT");
     broadcastTaskChange();
@@ -75,16 +76,17 @@ app.post("/api/tasks", route(async (request, response) => {
 app.put("/api/tasks/:id", route(async (request, response) => {
   if (!validId(request, response)) return;
   const title = typeof request.body?.title === "string" ? request.body.title.trim() : "";
+  const description = typeof request.body?.description === "string" ? request.body.description.trim() : "";
   const actor = request.body?.actor;
-  if (!title || title.length > 120 || !validActor(actor)) {
-    response.status(400).json({ error: "Title (1–120 characters) and a valid actor are required" });
+  if (!title || title.length > 120 || description.length > 1000 || !validActor(actor)) {
+    response.status(400).json({ error: "Title (1–120 characters), description (up to 1000 characters), and a valid actor are required" });
     return;
   }
   const client = await pool.connect();
   try {
     await client.query("BEGIN");
     const current = await client.query(
-      `SELECT id, title, status, created_at AS "createdAt", updated_at AS "updatedAt", deleted_at AS "deletedAt"
+      `SELECT id, title, description, status, created_at AS "createdAt", updated_at AS "updatedAt", deleted_at AS "deletedAt"
        FROM tasks WHERE id = $1 FOR UPDATE`, [request.params.id]
     );
     if (!current.rowCount || current.rows[0].deletedAt) {
@@ -92,20 +94,20 @@ app.put("/api/tasks/:id", route(async (request, response) => {
       response.status(404).json({ error: "Task not found" });
       return;
     }
-    if (current.rows[0].title === title) {
+    if (current.rows[0].title === title && current.rows[0].description === description) {
       await client.query("COMMIT");
       response.json({ ...current.rows[0], unchanged: true });
       return;
     }
     const updated = await client.query(
-      `UPDATE tasks SET title = $2, updated_at = now() WHERE id = $1
-       RETURNING id, title, status, created_at AS "createdAt", updated_at AS "updatedAt", deleted_at AS "deletedAt"`,
-      [request.params.id, title]
+      `UPDATE tasks SET title = $2, description = $3, updated_at = now() WHERE id = $1
+       RETURNING id, title, description, status, created_at AS "createdAt", updated_at AS "updatedAt", deleted_at AS "deletedAt"`,
+      [request.params.id, title, description]
     );
     await client.query(
-      `INSERT INTO audit_logs(task_id, actor, action, previous_title, task_title)
-       VALUES ($1, $2, 'title_changed', $3, $4)`,
-      [request.params.id, actor, current.rows[0].title, title]
+      `INSERT INTO audit_logs(task_id, actor, action, previous_title, previous_description, task_title, task_description)
+       VALUES ($1, $2, 'details_changed', $3, $4, $5, $6)`,
+      [request.params.id, actor, current.rows[0].title, current.rows[0].description, title, description]
     );
     await client.query("COMMIT");
     broadcastTaskChange();
@@ -127,7 +129,7 @@ app.put("/api/tasks/:id/status", route(async (request, response) => {
   try {
     await client.query("BEGIN");
     const current = await client.query(
-      "SELECT id, title, status, deleted_at FROM tasks WHERE id = $1 FOR UPDATE", [request.params.id]
+      "SELECT id, title, description, status, deleted_at FROM tasks WHERE id = $1 FOR UPDATE", [request.params.id]
     );
     if (!current.rowCount || current.rows[0].deleted_at) {
       await client.query("ROLLBACK");
@@ -147,13 +149,13 @@ app.put("/api/tasks/:id/status", route(async (request, response) => {
     }
     const updated = await client.query(
       `UPDATE tasks SET status = $2, updated_at = now() WHERE id = $1
-       RETURNING id, title, status, created_at AS "createdAt", updated_at AS "updatedAt", deleted_at AS "deletedAt"`,
+       RETURNING id, title, description, status, created_at AS "createdAt", updated_at AS "updatedAt", deleted_at AS "deletedAt"`,
       [task.id, status]
     );
     await client.query(
-      `INSERT INTO audit_logs(task_id, actor, action, from_status, to_status, task_title)
-       VALUES ($1, $2, 'status_changed', $3, $4, $5)`,
-      [task.id, actor, task.status, status, task.title]
+      `INSERT INTO audit_logs(task_id, actor, action, from_status, to_status, task_title, task_description)
+       VALUES ($1, $2, 'status_changed', $3, $4, $5, $6)`,
+      [task.id, actor, task.status, status, task.title, task.description]
     );
     await client.query("COMMIT");
     broadcastTaskChange();
@@ -174,7 +176,7 @@ app.delete("/api/tasks/:id", route(async (request, response) => {
   const client = await pool.connect();
   try {
     await client.query("BEGIN");
-    const current = await client.query("SELECT id, title, status, deleted_at FROM tasks WHERE id = $1 FOR UPDATE", [request.params.id]);
+    const current = await client.query("SELECT id, title, description, status, deleted_at FROM tasks WHERE id = $1 FOR UPDATE", [request.params.id]);
     if (!current.rowCount || current.rows[0].deleted_at) {
       await client.query("ROLLBACK");
       response.status(404).json({ error: "Task not found" });
@@ -183,9 +185,9 @@ app.delete("/api/tasks/:id", route(async (request, response) => {
     const task = current.rows[0];
     await client.query("UPDATE tasks SET deleted_at = now(), updated_at = now() WHERE id = $1", [task.id]);
     await client.query(
-      `INSERT INTO audit_logs(task_id, actor, action, from_status, to_status, task_title)
-       VALUES ($1, $2, 'deleted', $3, NULL, $4)`,
-      [task.id, actor, task.status, task.title]
+      `INSERT INTO audit_logs(task_id, actor, action, from_status, to_status, task_title, task_description)
+       VALUES ($1, $2, 'deleted', $3, NULL, $4, $5)`,
+      [task.id, actor, task.status, task.title, task.description]
     );
     await client.query("COMMIT");
     broadcastTaskChange();
@@ -205,7 +207,8 @@ app.get("/api/tasks/:id/audit-logs", route(async (request, response) => {
   }
   const result = await pool.query(
     `SELECT id, task_id AS "taskId", actor, action, from_status AS "fromStatus",
-       to_status AS "toStatus", previous_title AS "previousTitle", task_title AS "taskTitle", occurred_at AS "occurredAt"
+       to_status AS "toStatus", previous_title AS "previousTitle", previous_description AS "previousDescription",
+       task_title AS "taskTitle", task_description AS "taskDescription", occurred_at AS "occurredAt"
      FROM audit_logs WHERE task_id = $1 ORDER BY occurred_at ASC, id ASC`,
     [request.params.id]
   );

@@ -2,8 +2,8 @@ import { useEffect, useRef, useState, type DragEvent, type FormEvent } from "rea
 
 const statuses = ["to_do", "pending", "in_progress", "done"] as const;
 type Status = (typeof statuses)[number];
-type Task = { id: string; title: string; status: Status; createdAt: string; updatedAt: string; deletedAt: string | null };
-type AuditLog = { id: string; taskId: string; actor: string; action: "created" | "title_changed" | "status_changed" | "deleted"; fromStatus: Status | null; toStatus: Status | null; previousTitle: string | null; taskTitle: string; occurredAt: string };
+type Task = { id: string; title: string; description: string; status: Status; createdAt: string; updatedAt: string; deletedAt: string | null };
+type AuditLog = { id: string; taskId: string; actor: string; action: "created" | "title_changed" | "details_changed" | "status_changed" | "deleted"; fromStatus: Status | null; toStatus: Status | null; previousTitle: string | null; previousDescription: string | null; taskTitle: string; taskDescription: string | null; occurredAt: string };
 type LiveCursor = { clientId: string; actor: string; taskId: string; x: number; y: number; sequence: number };
 const labels: Record<Status, string> = { to_do: "To Do", pending: "Pending", in_progress: "In Progress", done: "Done" };
 type Theme = "light" | "dark";
@@ -32,6 +32,13 @@ function describe(log: AuditLog): string {
   if (log.action === "created") return `created task “${log.taskTitle}”`;
   if (log.action === "deleted") return `deleted task “${log.taskTitle}”`;
   if (log.action === "title_changed") return `renamed “${log.previousTitle}” to “${log.taskTitle}”`;
+  if (log.action === "details_changed") {
+    const titleChanged = log.previousTitle !== log.taskTitle;
+    const descriptionChanged = (log.previousDescription ?? "") !== (log.taskDescription ?? "");
+    if (titleChanged && descriptionChanged) return `updated the title and description`;
+    if (titleChanged) return `renamed “${log.previousTitle}” to “${log.taskTitle}”`;
+    return `updated the description`;
+  }
   return `changed the status from ${labels[log.fromStatus!]} to ${labels[log.toStatus!]}`;
 }
 
@@ -41,8 +48,10 @@ export function App() {
   const [actors, setActors] = useState<string[]>([]);
   const [actor, setActor] = useState("");
   const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
   const [selected, setSelected] = useState<Task | null>(null);
   const [editTitle, setEditTitle] = useState("");
+  const [editDescription, setEditDescription] = useState("");
   const [logs, setLogs] = useState<AuditLog[]>([]);
   const [showArchived, setShowArchived] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -128,8 +137,9 @@ export function App() {
   function create(event: FormEvent) {
     event.preventDefault();
     void run(async () => {
-      await api<Task>("/api/tasks", { method: "POST", body: JSON.stringify({ title, actor }) });
+      await api<Task>("/api/tasks", { method: "POST", body: JSON.stringify({ title, description, actor }) });
       setTitle("");
+      setDescription("");
       await refresh();
     });
   }
@@ -194,19 +204,21 @@ export function App() {
   async function openHistory(task: Task) {
     setSelected(task);
     setEditTitle(task.title);
+    setEditDescription(task.description);
     setLogs([]);
     try { setLogs(await api<AuditLog[]>(`/api/tasks/${task.id}/audit-logs`)); }
     catch (cause) { setError(cause instanceof Error ? cause.message : "Failed to load history"); }
   }
 
-  async function updateTitle(event: FormEvent) {
+  async function updateDetails(event: FormEvent) {
     event.preventDefault();
     if (!selected || selected.deletedAt) return;
     setBusy(true); setError("");
     try {
-      const updated = await api<Task>(`/api/tasks/${selected.id}`, { method: "PUT", body: JSON.stringify({ title: editTitle, actor }) });
+      const updated = await api<Task>(`/api/tasks/${selected.id}`, { method: "PUT", body: JSON.stringify({ title: editTitle, description: editDescription, actor }) });
       setSelected(updated);
       setEditTitle(updated.title);
+      setEditDescription(updated.description);
       await refresh();
       setLogs(await api<AuditLog[]>(`/api/tasks/${updated.id}/audit-logs`));
     } catch (cause) { setError(cause instanceof Error ? cause.message : "Failed to update task"); }
@@ -243,7 +255,10 @@ export function App() {
         <form onSubmit={create}>
           <label htmlFor="task-title">New task</label>
           <div className="form-row">
-            <input id="task-title" value={title} onChange={(event) => setTitle(event.target.value)} maxLength={120} placeholder="Example: Prepare Invoice" required />
+            <div className="task-fields">
+              <input id="task-title" value={title} onChange={(event) => setTitle(event.target.value)} maxLength={120} placeholder="Task title" required />
+              <input aria-label="Task description" value={description} onChange={(event) => setDescription(event.target.value)} maxLength={1000} placeholder="Short description (optional)" />
+            </div>
             <button type="submit" disabled={busy || !actor}>Add task</button>
           </div>
         </form>
@@ -270,7 +285,9 @@ export function App() {
               onDragStart={(event) => startDrag(event, task)}
               onDrag={(event) => publishCursor(event, task)}
               onDragEnd={endDrag}>
-              <h3>{task.title}</h3><p>Created {new Date(task.createdAt).toLocaleDateString("en-US")}</p>
+              <h3>{task.title}</h3>
+              {task.description && <p className="card-description">{task.description}</p>}
+              <p className="card-date">Created {new Date(task.createdAt).toLocaleDateString("en-US")}</p>
               <div className="card-actions">
                 <div className="card-secondary-actions">
                   <button type="button" className="text-button" onClick={() => void openHistory(task)}>History</button>
@@ -299,9 +316,12 @@ export function App() {
 
       {selected && <div className="overlay" onClick={() => setSelected(null)}><aside className="history" aria-label="Task history" onClick={(event) => event.stopPropagation()}>
         <div className="history-heading"><div><p className="eyebrow">AUDIT LOG</p><h2>{selected.title}</h2><p>{selected.deletedAt ? "Task deleted" : `Status: ${labels[selected.status]}`}</p></div><button type="button" onClick={() => setSelected(null)} aria-label="Close history">×</button></div>
-        {!selected.deletedAt && <form className="edit-task" onSubmit={updateTitle}>
+        {!selected.deletedAt && <form className="edit-task" onSubmit={updateDetails}>
           <label htmlFor="edit-title">Task title</label>
-          <div><input id="edit-title" value={editTitle} onChange={(event) => setEditTitle(event.target.value)} maxLength={120} required /><button type="submit" disabled={busy || editTitle.trim() === selected.title}>Save</button></div>
+          <input id="edit-title" value={editTitle} onChange={(event) => setEditTitle(event.target.value)} maxLength={120} required />
+          <label htmlFor="edit-description">Description</label>
+          <textarea id="edit-description" value={editDescription} onChange={(event) => setEditDescription(event.target.value)} maxLength={1000} rows={5} placeholder="Add task details..." />
+          <button type="submit" disabled={busy || (editTitle.trim() === selected.title && editDescription.trim() === selected.description)}>Save changes</button>
         </form>}
         <ol className="timeline">{logs.map((log) => <li key={log.id}><p><strong>{log.actor}</strong> {describe(log)}</p><time dateTime={log.occurredAt}>{new Date(log.occurredAt).toLocaleString("en-US", { dateStyle: "medium", timeStyle: "short" })}</time></li>)}</ol>
       </aside></div>}

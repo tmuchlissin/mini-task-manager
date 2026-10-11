@@ -33,15 +33,19 @@ async function request(path: string, method = "GET", body?: unknown) {
 
 test("status transitions, idempotence, soft delete, and immutable audit history", async () => {
   const title = `Integration test ${crypto.randomUUID()}`;
-  const created = await request("/tasks", "POST", { title, actor: "john.doe" });
+  const description = "Initial integration test description";
+  const created = await request("/tasks", "POST", { title, description, actor: "john.doe" });
   assert.equal(created.status, 201);
+  assert.equal(created.data.description, description);
   const id = created.data.id as string;
 
   const renamedTitle = `${title} renamed`;
-  const renamed = await request(`/tasks/${id}`, "PUT", { title: renamedTitle, actor: "alex.lee" });
+  const updatedDescription = "Updated integration test description";
+  const renamed = await request(`/tasks/${id}`, "PUT", { title: renamedTitle, description: updatedDescription, actor: "alex.lee" });
   assert.equal(renamed.status, 200);
   assert.equal(renamed.data.title, renamedTitle);
-  const repeatedRename = await request(`/tasks/${id}`, "PUT", { title: renamedTitle, actor: "alex.lee" });
+  assert.equal(renamed.data.description, updatedDescription);
+  const repeatedRename = await request(`/tasks/${id}`, "PUT", { title: renamedTitle, description: updatedDescription, actor: "alex.lee" });
   assert.equal(repeatedRename.status, 200);
   assert.equal(repeatedRename.data.unchanged, true);
 
@@ -57,9 +61,11 @@ test("status transitions, idempotence, soft delete, and immutable audit history"
   assert.equal(repeated.data.unchanged, true);
 
   const beforeDelete = await request(`/tasks/${id}/audit-logs`);
-  assert.deepEqual(beforeDelete.data.map((log: { action: string }) => log.action), ["created", "title_changed", "status_changed"]);
+  assert.deepEqual(beforeDelete.data.map((log: { action: string }) => log.action), ["created", "details_changed", "status_changed"]);
   assert.equal(beforeDelete.data[1].previousTitle, title);
   assert.equal(beforeDelete.data[1].taskTitle, renamedTitle);
+  assert.equal(beforeDelete.data[1].previousDescription, description);
+  assert.equal(beforeDelete.data[1].taskDescription, updatedDescription);
   assert.equal(beforeDelete.data[2].fromStatus, "to_do");
   assert.equal(beforeDelete.data[2].toStatus, "pending");
   assert.equal(beforeDelete.data[2].actor, "jane.smith");
@@ -94,5 +100,5 @@ test("status transitions, idempotence, soft delete, and immutable audit history"
   assert.equal(archived.data.some((task: { id: string; deletedAt: string | null }) => task.id === id && task.deletedAt), true);
   const afterDelete = await request(`/tasks/${id}/audit-logs`);
   assert.deepEqual(afterDelete.data.map((log: { action: string }) => log.action),
-    ["created", "title_changed", "status_changed", "status_changed", "status_changed", "deleted"]);
+    ["created", "details_changed", "status_changed", "status_changed", "status_changed", "deleted"]);
 });

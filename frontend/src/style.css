@@ -18,11 +18,13 @@ h1 { font-size: clamp(28px, 3vw, 38px); letter-spacing: -.04em; margin: 0 0 7px;
 .toolbar { align-items: end; background: white; border: 1.5px solid #d8dce3; border-radius: 14px; box-shadow: 0 5px 24px #0000000d; display: flex; gap: 24px; justify-content: space-between; margin-bottom: 28px; padding: 20px; }
 .toolbar form { flex: 1; max-width: 700px; min-width: 0; }
 .toolbar label { color: #565c66; display: block; font-size: 12px; font-weight: 700; margin-bottom: 8px; }
-.form-row { display: flex; gap: 10px; }
-input, select { background: #fff; border: 1px solid #dcdfe4; border-radius: 8px; color: #202124; min-height: 40px; padding: 9px 12px; }
+.form-row { align-items: end; display: flex; gap: 10px; }
+.task-fields { display: grid; flex: 1; gap: 8px; min-width: 0; }
+input, select, textarea { background: #fff; border: 1px solid #dcdfe4; border-radius: 8px; color: #202124; min-height: 40px; padding: 9px 12px; }
 input { flex: 1; min-width: 120px; }
+textarea { resize: vertical; }
 select { min-width: 170px; }
-input:focus, select:focus { outline: 2px solid #35b7c6; outline-offset: 1px; }
+input:focus, select:focus, textarea:focus { outline: 2px solid #35b7c6; outline-offset: 1px; }
 .form-row button, .card-actions button:not(.text-button):not(.delete-button) { background: #7148c4; border: 1px solid #7148c4; border-radius: 8px; color: white; font-size: 13px; font-weight: 700; padding: 9px 13px; white-space: nowrap; }
 .form-row button { background: linear-gradient(110deg, #087f98, #6643b8); border-color: #087f98; }
 .board { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); align-items: stretch; gap: 16px; position: relative; }
@@ -55,6 +57,8 @@ input:focus, select:focus { outline: 2px solid #35b7c6; outline-offset: 1px; }
 .card[draggable="true"]:active { cursor: grabbing; }
 .card h3 { font-size: 14px; font-weight: 700; line-height: 1.45; margin: 0 0 7px; overflow-wrap: anywhere; }
 .card > p, .empty { color: #757b85; font-size: 12px; margin: 0; }
+.card-description { display: -webkit-box; font-size: 13px !important; line-height: 1.45; margin-bottom: 9px !important; overflow: hidden; overflow-wrap: anywhere; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
+.card-date { font-size: 11px !important; }
 .empty { padding: 12px 2px; }
 .card-actions { align-items: center; border-top: 1px solid #dde1e7; display: flex; gap: 12px; justify-content: space-between; margin-top: 15px; padding-top: 12px; }
 .card-actions .advance-button { align-items: center; background: #f0ebfa; border: 1px solid #ded1f5; color: #6842b0; display: none; gap: 7px; min-height: 32px; padding: 6px 10px; }
@@ -81,9 +85,8 @@ input:focus, select:focus { outline: 2px solid #35b7c6; outline-offset: 1px; }
 .history-heading button { background: #f1f2f4; border: 0; border-radius: 7px; color: #6842b0; font-size: 24px; height: 34px; width: 34px; }
 .edit-task { border-bottom: 1px solid #e4e6ea; margin-top: 26px; padding-bottom: 24px; }
 .edit-task label { color: #565c66; display: block; font-size: 12px; font-weight: 700; margin-bottom: 8px; }
-.edit-task > div { display: flex; gap: 8px; }
-.edit-task input { min-width: 0; }
-.edit-task button { background: #6842b0; border: 1px solid #6842b0; border-radius: 8px; color: white; font-size: 13px; font-weight: 700; padding: 8px 14px; }
+.edit-task input, .edit-task textarea { display: block; margin-bottom: 16px; width: 100%; }
+.edit-task button { background: #6842b0; border: 1px solid #6842b0; border-radius: 8px; color: white; font-size: 13px; font-weight: 700; min-height: 40px; padding: 8px 14px; width: 100%; }
 .timeline { border-left: 2px solid #e4d7f7; list-style: none; margin: 34px 0 0 7px; padding: 0 0 0 23px; }
 .timeline li { margin-bottom: 27px; position: relative; }
 .timeline li::before { background: #6241ad; border: 3px solid white; border-radius: 50%; box-shadow: 0 0 0 1px #a6dbe2; content: ''; height: 10px; left: -31px; position: absolute; top: 3px; width: 10px; }
@@ -113,7 +116,8 @@ input:focus, select:focus { outline: 2px solid #35b7c6; outline-offset: 1px; }
 [data-theme="dark"] .card-actions .advance-button { background: #2c233b; border-color: #493763; color: #d8c2ff; }
 [data-theme="dark"] .card-actions .advance-button:hover { background: #7549bd; border-color: #7549bd; color: white; }
 [data-theme="dark"] input,
-[data-theme="dark"] select { background: #161619; border-color: #414146; color: #f4f4f5; }
+[data-theme="dark"] select,
+[data-theme="dark"] textarea { background: #161619; border-color: #414146; color: #f4f4f5; }
 [data-theme="dark"] input::placeholder { color: #aaabb2; }
 [data-theme="dark"] .count { background: #202024; color: #dfcfff; }
 [data-theme="dark"] .theme-toggle { background: #1b1b1e; border-color: #414146; color: #e8d9ff; }
