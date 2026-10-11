@@ -51,6 +51,7 @@ export function App() {
   const [description, setDescription] = useState("");
   const [showCreate, setShowCreate] = useState(false);
   const [selected, setSelected] = useState<Task | null>(null);
+  const [panelMode, setPanelMode] = useState<"edit" | "history">("edit");
   const [editTitle, setEditTitle] = useState("");
   const [editDescription, setEditDescription] = useState("");
   const [logs, setLogs] = useState<AuditLog[]>([]);
@@ -213,10 +214,17 @@ export function App() {
     });
   }
 
-  async function openHistory(task: Task) {
+  async function openEditor(task: Task) {
     setSelected(task);
+    setPanelMode("edit");
     setEditTitle(task.title);
     setEditDescription(task.description);
+    setLogs([]);
+  }
+
+  async function openHistory(task: Task) {
+    setSelected(task);
+    setPanelMode("history");
     setLogs([]);
     try { setLogs(await api<AuditLog[]>(`/api/tasks/${task.id}/audit-logs`)); }
     catch (cause) { setError(cause instanceof Error ? cause.message : "Failed to load history"); }
@@ -287,8 +295,8 @@ export function App() {
             <div className="column-heading"><h2>{labels[status]}</h2><span>{columnTasks.length}</span></div>
             <div className="cards">{columnTasks.length ? columnTasks.map((task) => <article className={`card${draggedId === task.id ? " dragging" : ""}`} key={task.id} tabIndex={0}
               draggable={!busy && status !== "done"}
-              onClick={(event) => { if (!(event.target as HTMLElement).closest("button")) void openHistory(task); }}
-              onKeyDown={(event) => { if ((event.key === "Enter" || event.key === " ") && event.target === event.currentTarget) { event.preventDefault(); void openHistory(task); } }}
+              onClick={(event) => { if (!(event.target as HTMLElement).closest("button")) void openEditor(task); }}
+              onKeyDown={(event) => { if ((event.key === "Enter" || event.key === " ") && event.target === event.currentTarget) { event.preventDefault(); void openEditor(task); } }}
               onDragStart={(event) => startDrag(event, task)}
               onDrag={(event) => publishCursor(event, task)}
               onDragEnd={endDrag}>
@@ -333,16 +341,16 @@ export function App() {
         </form>
       </section></div>}
 
-      {selected && <div className="overlay" onClick={() => setSelected(null)}><aside className="history" aria-label="Task history" onClick={(event) => event.stopPropagation()}>
-        <div className="history-heading"><div><p className="eyebrow">AUDIT LOG</p><h2>{selected.title}</h2><p>{selected.deletedAt ? "Task deleted" : `Status: ${labels[selected.status]}`}</p></div><button type="button" onClick={() => setSelected(null)} aria-label="Close history">×</button></div>
-        {!selected.deletedAt && <form className="edit-task" onSubmit={updateDetails}>
+      {selected && <div className="overlay" onClick={() => setSelected(null)}><aside className="history" aria-label={panelMode === "edit" ? "Edit task" : "Task history"} onClick={(event) => event.stopPropagation()}>
+        <div className="history-heading"><div><p className="eyebrow">{panelMode === "edit" ? "EDIT TASK" : "AUDIT LOG"}</p><h2>{selected.title}</h2><p>{selected.deletedAt ? "Task deleted" : `Status: ${labels[selected.status]}`}</p></div><button type="button" onClick={() => setSelected(null)} aria-label="Close panel">×</button></div>
+        {panelMode === "edit" && !selected.deletedAt && <form className="edit-task" onSubmit={updateDetails}>
           <label htmlFor="edit-title">Task title</label>
           <input id="edit-title" value={editTitle} onChange={(event) => setEditTitle(event.target.value)} maxLength={120} required />
           <label htmlFor="edit-description">Description</label>
           <textarea id="edit-description" value={editDescription} onChange={(event) => setEditDescription(event.target.value)} maxLength={1000} rows={5} placeholder="Add task details..." />
           <button type="submit" disabled={busy || (editTitle.trim() === selected.title && editDescription.trim() === selected.description)}>Save changes</button>
         </form>}
-        <ol className="timeline">{logs.map((log) => <li key={log.id}><p><strong>{log.actor}</strong> {describe(log)}</p><time dateTime={log.occurredAt}>{new Date(log.occurredAt).toLocaleString("en-US", { dateStyle: "medium", timeStyle: "short" })}</time></li>)}</ol>
+        {panelMode === "history" && <ol className="timeline">{logs.map((log) => <li key={log.id}><p><strong>{log.actor}</strong> {describe(log)}</p><time dateTime={log.occurredAt}>{new Date(log.occurredAt).toLocaleString("en-US", { dateStyle: "medium", timeStyle: "short" })}</time></li>)}</ol>}
       </aside></div>}
     </main>
   );
