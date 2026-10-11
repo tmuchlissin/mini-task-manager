@@ -45,9 +45,9 @@ input:focus, select:focus, textarea:focus { outline: 2px solid #35b7c6; outline-
 .live-cursor { align-items: flex-start; display: flex; filter: drop-shadow(0 2px 4px #351d5738); gap: 2px; pointer-events: none; position: absolute; transition: left 70ms linear, top 70ms linear; z-index: 5; }
 .live-cursor svg { flex: none; }
 .live-cursor span { border: 2px solid white; border-radius: 999px; color: white; font-size: 11px; font-weight: 700; max-width: 180px; overflow: hidden; padding: 3px 8px; text-overflow: ellipsis; white-space: nowrap; }
-.board-toolbar { align-items: end; display: flex; gap: 20px; justify-content: space-between; margin-bottom: 14px; }
+.board-toolbar { align-items: flex-start; display: flex; flex-direction: column; gap: 9px; margin-bottom: 14px; }
 .board-controls { align-items: end; display: flex; flex: none; gap: 12px; }
-.board-hint { color: #666b75; flex: 1; font-size: 13px; margin: 0 0 4px; text-align: right; }
+.board-hint { color: #666b75; font-size: 13px; margin: 0; text-align: left; }
 .mobile-hint { display: none; }
 .column { --status-accent: #52718d; background: #f6f7f9; border: 1.5px solid #d8dce3; border-radius: 14px; min-height: 170px; padding: 16px; transition: border-color .18s ease, background-color .18s ease; }
 .column.to_do { --status-accent: #52718d; }
@@ -186,7 +186,7 @@ input:focus, select:focus, textarea:focus { outline: 2px solid #35b7c6; outline-
   .actor-control select { width: 100%; }
   .form-row { align-items: stretch; flex-direction: column; }
   .form-row button { min-height: 44px; }
-  .board-toolbar { align-items: stretch; flex-direction: column; gap: 12px; }
+  .board-toolbar { gap: 12px; }
   .board-controls { justify-content: flex-start; }
   .board-hint { margin-left: 0; text-align: left; }
 }
