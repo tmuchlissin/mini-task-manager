@@ -56,11 +56,10 @@ input:focus, select:focus { outline: 2px solid #35b7c6; outline-offset: 1px; }
 .card > p, .empty { color: #757b85; font-size: 12px; margin: 0; }
 .empty { padding: 12px 2px; }
 .card-actions { align-items: center; border-top: 1px solid #edf0f3; display: flex; gap: 12px; justify-content: space-between; margin-top: 15px; padding-top: 12px; }
-.card-actions .advance-button { align-items: center; background: #f0ebfa; border: 1px solid #ded1f5; color: #6842b0; display: inline-flex; gap: 7px; min-height: 32px; padding: 6px 10px; }
+.card-actions .advance-button { align-items: center; background: #f0ebfa; border: 1px solid #ded1f5; color: #6842b0; display: none; gap: 7px; min-height: 32px; padding: 6px 10px; }
 .card-actions .advance-button:hover { background: #6842b0; border-color: #6842b0; color: white; filter: none; }
 .card-actions .advance-button span { font-size: 16px; line-height: 1; }
-.card-secondary-actions { align-items: center; display: flex; gap: 12px; min-width: 0; }
-.card-secondary-actions:only-child { justify-content: space-between; width: 100%; }
+.card-secondary-actions { align-items: center; display: flex; gap: 12px; justify-content: space-between; min-width: 0; width: 100%; }
 .card-secondary-actions button { min-height: 28px; }
 .card-actions button:not(.text-button):not(.delete-button):hover, .form-row button:hover { filter: brightness(1.1); }
 .card-actions .text-button:hover, .card-actions .delete-button:hover { text-decoration: underline; }
@@ -149,7 +148,9 @@ input:focus, select:focus { outline: 2px solid #35b7c6; outline-offset: 1px; }
   .column { min-height: 130px; }
   .column-heading { margin-bottom: 12px; }
   .card-actions { gap: 10px; }
-  .card-actions .advance-button { min-height: 40px; }
+  .card-actions .advance-button { display: flex; grid-row: 1; justify-content: space-between; min-height: 44px; width: 100%; }
+  .card-actions { display: grid; }
+  .card-secondary-actions { grid-row: 2; }
   .card-secondary-actions button, .archive-toggle, .archive-list button { min-height: 44px; }
   .desktop-hint { display: none; }
   .mobile-hint { display: inline; }
