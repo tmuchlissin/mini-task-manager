@@ -80,7 +80,7 @@ input:focus, select:focus, textarea:focus { outline: 2px solid #35b7c6; outline-
 .card-actions .advance-button { align-items: center; background: #f0ebfa; border: 1px solid #ded1f5; color: #6842b0; display: none; gap: 7px; min-height: 32px; padding: 6px 10px; }
 .card-actions .advance-button:hover { background: #6842b0; border-color: #6842b0; color: white; filter: none; }
 .card-actions .advance-button span { font-size: 16px; line-height: 1; }
-.card-secondary-actions { align-items: center; display: flex; gap: 12px; justify-content: space-between; min-width: 0; width: 100%; }
+.card-secondary-actions { align-items: flex-start; display: flex; gap: 12px; justify-content: space-between; min-width: 0; width: 100%; }
 .card-secondary-actions button { min-height: 28px; }
 .card-right-actions { align-items: end; display: flex; flex-direction: column; gap: 3px; }
 .card-right-actions .card-date { color: #8a909a; font-size: 11px !important; white-space: nowrap; }
