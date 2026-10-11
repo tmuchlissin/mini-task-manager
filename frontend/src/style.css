@@ -45,7 +45,9 @@ input:focus, select:focus, textarea:focus { outline: 2px solid #35b7c6; outline-
 .live-cursor { align-items: flex-start; display: flex; filter: drop-shadow(0 2px 4px #351d5738); gap: 2px; pointer-events: none; position: absolute; transition: left 70ms linear, top 70ms linear; z-index: 5; }
 .live-cursor svg { flex: none; }
 .live-cursor span { border: 2px solid white; border-radius: 999px; color: white; font-size: 11px; font-weight: 700; max-width: 180px; overflow: hidden; padding: 3px 8px; text-overflow: ellipsis; white-space: nowrap; }
-.board-hint { color: #666b75; font-size: 13px; margin: -12px 0 18px; }
+.board-toolbar { align-items: end; display: flex; gap: 20px; justify-content: space-between; margin-bottom: 14px; }
+.board-controls { align-items: end; display: flex; flex: none; gap: 10px; }
+.board-hint { color: #666b75; font-size: 13px; margin: 0 0 4px; }
 .mobile-hint { display: none; }
 .column { --status-accent: #52718d; background: #f6f7f9; border: 1.5px solid #d8dce3; border-radius: 14px; min-height: 170px; padding: 16px; transition: border-color .18s ease, background-color .18s ease; }
 .column.to_do { --status-accent: #52718d; }
@@ -184,13 +186,16 @@ input:focus, select:focus, textarea:focus { outline: 2px solid #35b7c6; outline-
   .actor-control select { width: 100%; }
   .form-row { align-items: stretch; flex-direction: column; }
   .form-row button { min-height: 44px; }
+  .board-toolbar { align-items: stretch; flex-direction: column; gap: 12px; }
+  .board-controls { justify-content: space-between; }
 }
 @media (max-width: 620px) {
   main { padding: 24px 16px 56px; }
   .page-header { align-items: flex-start; flex-direction: column; gap: 12px; margin-bottom: 22px; }
   .page-header h1 { font-size: 30px; }
   .header-actions { width: 100%; }
-  .header-actor { order: 3; width: 100%; }
+  .board-controls { align-items: stretch; flex-direction: column; }
+  .header-actor { width: 100%; }
   .header-actor select { flex: 1; min-width: 0; }
   .create-trigger { flex: 1; justify-content: center; }
   .toolbar { margin-bottom: 24px; padding: 16px; }

@@ -236,11 +236,6 @@ export function App() {
         <div><p className="eyebrow">INTERNAL WORKSPACE</p><h1>Mini Task Manager</h1><p>Manage tasks and track every change clearly.</p></div>
         <div className="header-actions">
           <span className="count">{active.length} active {active.length === 1 ? "task" : "tasks"}</span>
-          <div className="header-actor">
-            <label htmlFor="actor">Acting as</label>
-            <select id="actor" value={actor} onChange={(event) => setActor(event.target.value)} disabled={busy}>{actors.map((name) => <option key={name}>{name}</option>)}</select>
-          </div>
-          <button type="button" className="create-trigger" onClick={() => setShowCreate(true)} disabled={!actor}><span aria-hidden="true">+</span> New task</button>
           <button type="button" className="theme-toggle" onClick={() => setTheme(theme === "light" ? "dark" : "light")}
             aria-label={theme === "light" ? "Switch to dark theme" : "Switch to light theme"}
             title={theme === "light" ? "Switch to dark theme" : "Switch to light theme"} aria-pressed={theme === "dark"}>
@@ -258,7 +253,16 @@ export function App() {
         </div>
       </header>
 
-      <p className="board-hint"><span className="desktop-hint">Drag a card to the next column to change its status. </span><span className="mobile-hint">Use the button on a card to change its status. </span>The selected user will appear in its history.</p>
+      <div className="board-toolbar">
+        <p className="board-hint"><span className="desktop-hint">Drag a card to the next column to change its status. </span><span className="mobile-hint">Use the button on a card to change its status. </span>The selected user will appear in its history.</p>
+        <div className="board-controls">
+          <div className="header-actor">
+            <label htmlFor="actor">Acting as</label>
+            <select id="actor" value={actor} onChange={(event) => setActor(event.target.value)} disabled={busy}>{actors.map((name) => <option key={name}>{name}</option>)}</select>
+          </div>
+          <button type="button" className="create-trigger" onClick={() => setShowCreate(true)} disabled={!actor}><span aria-hidden="true">+</span> New task</button>
+        </div>
+      </div>
 
       {error && <p className="error" role="alert">{error} <button type="button" onClick={() => void refresh().catch((cause: Error) => setError(cause.message))}>Try again</button></p>}
       {loading ? <p>Loading tasks...</p> : <section className="board" ref={boardRef} aria-label="Task board">
