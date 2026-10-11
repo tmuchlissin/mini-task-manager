@@ -253,9 +253,11 @@ export function App() {
               onDragEnd={endDrag}>
               <h3>{task.title}</h3><p>Created {new Date(task.createdAt).toLocaleDateString("en-US")}</p>
               <div className="card-actions">
-                <button type="button" className="text-button" onClick={() => void openHistory(task)}>History</button>
-                {status !== "done" && <button type="button" onClick={() => advance(task)} disabled={busy}>Move to {labels[statuses[statuses.indexOf(status) + 1]]} →</button>}
-                <button type="button" className="delete-button" onClick={() => remove(task)} disabled={busy} aria-label={`Delete ${task.title}`}>Delete</button>
+                {status !== "done" && <button type="button" className="advance-button" onClick={() => advance(task)} disabled={busy}>Move to {labels[statuses[statuses.indexOf(status) + 1]]} <span aria-hidden="true">→</span></button>}
+                <div className="card-secondary-actions">
+                  <button type="button" className="text-button" onClick={() => void openHistory(task)}>History</button>
+                  <button type="button" className="delete-button" onClick={() => remove(task)} disabled={busy} aria-label={`Delete ${task.title}`}>Delete</button>
+                </div>
               </div>
             </article>) : <p className="empty">No tasks yet</p>}</div>
           </div>;

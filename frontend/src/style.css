@@ -55,11 +55,15 @@ input:focus, select:focus { outline: 2px solid #35b7c6; outline-offset: 1px; }
 .card h3 { font-size: 14px; font-weight: 700; line-height: 1.45; margin: 0 0 7px; overflow-wrap: anywhere; }
 .card > p, .empty { color: #757b85; font-size: 12px; margin: 0; }
 .empty { padding: 12px 2px; }
-.card-actions { align-items: center; display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+.card-actions { display: grid; gap: 11px; margin-top: 16px; }
+.card-actions .advance-button { align-items: center; display: flex; justify-content: space-between; min-height: 36px; width: 100%; }
+.card-actions .advance-button span { font-size: 18px; line-height: 1; margin-left: 8px; }
+.card-secondary-actions { align-items: center; display: flex; justify-content: space-between; gap: 12px; }
+.card-secondary-actions button { min-height: 28px; }
 .card-actions button:not(.text-button):not(.delete-button):hover, .form-row button:hover { filter: brightness(1.1); }
 .card-actions .text-button:hover, .card-actions .delete-button:hover { text-decoration: underline; }
 .text-button, .delete-button, .archive-toggle { background: none; border: 0; color: #087f98; font-size: 12px; font-weight: 700; padding: 3px 0; }
-.delete-button { color: #b64c71; margin-left: auto; }
+.delete-button { color: #b64c71; }
 .archive { border-top: 1px solid #e4e6ea; margin-top: 34px; padding-top: 20px; }
 .archive-toggle { font-size: 13px; }
 .archive-list { max-width: 500px; margin-top: 12px; }
@@ -139,8 +143,9 @@ input:focus, select:focus { outline: 2px solid #35b7c6; outline-offset: 1px; }
   .board { grid-template-columns: minmax(0, 1fr); gap: 12px; }
   .column { min-height: 130px; }
   .column-heading { margin-bottom: 12px; }
-  .card-actions { gap: 10px; }
-  .card-actions button, .archive-toggle, .archive-list button { min-height: 44px; }
+  .card-actions { gap: 8px; }
+  .card-actions .advance-button { min-height: 44px; }
+  .card-secondary-actions button, .archive-toggle, .archive-list button { min-height: 44px; }
   .desktop-hint { display: none; }
   .mobile-hint { display: inline; }
   .live-cursor span { max-width: 130px; }
