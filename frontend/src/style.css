@@ -11,7 +11,7 @@ h1 { font-size: clamp(28px, 3vw, 38px); letter-spacing: -.04em; margin: 0 0 7px;
 .page-header p:last-child { color: #6b7890; margin: 0; }
 .count { background: #e8efff; border-radius: 999px; color: #315caa; font-size: 13px; font-weight: 700; padding: 9px 14px; white-space: nowrap; }
 .header-actions { align-items: center; display: flex; flex-wrap: wrap; gap: 10px; }
-.theme-toggle { align-items: center; background: white; border: 1px solid #d6dfec; border-radius: 999px; color: #315caa; display: inline-flex; font-size: 13px; font-weight: 700; gap: 7px; min-height: 36px; padding: 6px 13px; white-space: nowrap; }
+.theme-toggle { align-items: center; background: white; border: 1px solid #d6dfec; border-radius: 10px; color: #315caa; display: inline-flex; height: 40px; justify-content: center; padding: 0; width: 40px; }
 .theme-toggle:hover { border-color: #8db1ed; }
 .theme-toggle:focus-visible { outline: 2px solid #3168cb; outline-offset: 2px; }
 .theme-toggle span { font-size: 18px; line-height: 1; }

@@ -206,9 +206,9 @@ export function App() {
         <div className="header-actions">
           <span className="count">{active.length} task aktif</span>
           <button type="button" className="theme-toggle" onClick={() => setTheme(theme === "light" ? "dark" : "light")}
-            aria-label={theme === "light" ? "Aktifkan tema gelap" : "Aktifkan tema terang"} aria-pressed={theme === "dark"}>
+            aria-label={theme === "light" ? "Aktifkan tema gelap" : "Aktifkan tema terang"}
+            title={theme === "light" ? "Aktifkan tema gelap" : "Aktifkan tema terang"} aria-pressed={theme === "dark"}>
             <span aria-hidden="true">{theme === "light" ? "☾" : "☀"}</span>
-            {theme === "light" ? "Mode gelap" : "Mode terang"}
           </button>
         </div>
       </header>
