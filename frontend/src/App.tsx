@@ -6,6 +6,15 @@ type Task = { id: string; title: string; status: Status; createdAt: string; upda
 type AuditLog = { id: string; taskId: string; actor: string; action: "created" | "status_changed" | "deleted"; fromStatus: Status | null; toStatus: Status | null; taskTitle: string; occurredAt: string };
 type LiveCursor = { clientId: string; actor: string; taskId: string; x: number; y: number; sequence: number };
 const labels: Record<Status, string> = { to_do: "To Do", pending: "Pending", in_progress: "In Progress", done: "Done" };
+type Theme = "light" | "dark";
+
+function initialTheme(): Theme {
+  try {
+    const saved = window.localStorage.getItem("mini-task-theme");
+    if (saved === "light" || saved === "dark") return saved;
+  } catch { /* Storage may be unavailable in private browsing. */ }
+  return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+}
 
 async function api<T>(url: string, options?: RequestInit): Promise<T> {
   const response = await fetch(url, {
@@ -26,6 +35,7 @@ function describe(log: AuditLog): string {
 }
 
 export function App() {
+  const [theme, setTheme] = useState<Theme>(initialTheme);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [actors, setActors] = useState<string[]>([]);
   const [actor, setActor] = useState("");
@@ -43,6 +53,12 @@ export function App() {
   const clientId = useRef(crypto.randomUUID());
   const lastCursorUpdate = useRef(0);
   const cursorSequence = useRef(0);
+
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme;
+    try { window.localStorage.setItem("mini-task-theme", theme); }
+    catch { /* The selected theme still applies for this session. */ }
+  }, [theme]);
 
   async function refresh() {
     const rows = await api<Task[]>("/api/tasks?includeDeleted=true");
@@ -187,7 +203,14 @@ export function App() {
     <main>
       <header className="page-header">
         <div><p className="eyebrow">INTERNAL WORKSPACE</p><h1>Mini Task Manager</h1><p>Kelola task dan lihat setiap perubahan dengan jelas.</p></div>
-        <span className="count">{active.length} task aktif</span>
+        <div className="header-actions">
+          <span className="count">{active.length} task aktif</span>
+          <button type="button" className="theme-toggle" onClick={() => setTheme(theme === "light" ? "dark" : "light")}
+            aria-label={theme === "light" ? "Aktifkan tema gelap" : "Aktifkan tema terang"} aria-pressed={theme === "dark"}>
+            <span aria-hidden="true">{theme === "light" ? "☾" : "☀"}</span>
+            {theme === "light" ? "Mode gelap" : "Mode terang"}
+          </button>
+        </div>
       </header>
 
       <section className="toolbar" aria-label="Buat task">

@@ -38,7 +38,7 @@ React (frontend/src/App.tsx) → Express (backend/src/app.ts) → PostgreSQL
                                                         ↳ tasks + audit_logs
 ```
 
-Frontend menampilkan empat kolom, form pembuatan, dropdown actor, drag-and-drop atau tombol untuk pindah ke status berikutnya, panel riwayat, serta daftar task yang dihapus. Saat seseorang menggeser kartu, browser lain yang membuka board menampilkan kursor berlabel actor; perubahan task juga muncul otomatis. Backend memvalidasi input dan urutan status. `backend/schema.sql` berisi skema dan trigger audit log; `backend/src/migrate.ts` menerapkannya.
+Frontend menampilkan empat kolom, form pembuatan, dropdown actor, drag-and-drop atau tombol untuk pindah ke status berikutnya, panel riwayat, serta daftar task yang dihapus. Tombol tema di header memilih mode terang/gelap; pilihannya disimpan di browser dan awalnya mengikuti preferensi sistem. Saat seseorang menggeser kartu, browser lain yang membuka board menampilkan kursor berlabel actor; perubahan task juga muncul otomatis. Backend memvalidasi input dan urutan status. `backend/schema.sql` berisi skema dan trigger audit log; `backend/src/migrate.ts` menerapkannya.
 
 | Method | Endpoint | Fungsi |
 | --- | --- | --- |

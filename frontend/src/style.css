@@ -1,4 +1,4 @@
-:root { font-family: Inter, ui-sans-serif, system-ui, sans-serif; color: #182b4d; background: #f7f9fc; font-synthesis: none; }
+:root { font-family: Inter, ui-sans-serif, system-ui, sans-serif; color: #182b4d; background: #f7f9fc; color-scheme: light; font-synthesis: none; }
 * { box-sizing: border-box; }
 body { margin: 0; }
 button, input, select { font: inherit; }
@@ -10,6 +10,11 @@ main { max-width: 1440px; margin: 0 auto; padding: 44px clamp(16px, 3vw, 40px) 8
 h1 { font-size: clamp(28px, 3vw, 38px); letter-spacing: -.04em; margin: 0 0 7px; }
 .page-header p:last-child { color: #6b7890; margin: 0; }
 .count { background: #e8efff; border-radius: 999px; color: #315caa; font-size: 13px; font-weight: 700; padding: 9px 14px; white-space: nowrap; }
+.header-actions { align-items: center; display: flex; flex-wrap: wrap; gap: 10px; }
+.theme-toggle { align-items: center; background: white; border: 1px solid #d6dfec; border-radius: 999px; color: #315caa; display: inline-flex; font-size: 13px; font-weight: 700; gap: 7px; min-height: 36px; padding: 6px 13px; white-space: nowrap; }
+.theme-toggle:hover { border-color: #8db1ed; }
+.theme-toggle:focus-visible { outline: 2px solid #3168cb; outline-offset: 2px; }
+.theme-toggle span { font-size: 18px; line-height: 1; }
 .toolbar { align-items: end; background: white; border: 1px solid #e4eaf3; border-radius: 14px; box-shadow: 0 5px 24px #1d3b7010; display: flex; gap: 24px; justify-content: space-between; margin-bottom: 28px; padding: 20px; }
 .toolbar form { flex: 1; max-width: 700px; min-width: 0; }
 .toolbar label { color: #52627c; display: block; font-size: 12px; font-weight: 700; margin-bottom: 8px; }
@@ -65,6 +70,44 @@ input:focus, select:focus { outline: 2px solid #93b5f2; outline-offset: 1px; }
 .timeline time { color: #8190a7; font-size: 12px; }
 .error { background: #fff1f2; border: 1px solid #f4c6ce; border-radius: 8px; color: #a32940; padding: 12px; }
 .error button { background: none; border: 0; color: inherit; text-decoration: underline; }
+:root[data-theme="dark"] { color: #edf3ff; background: #0d1727; color-scheme: dark; }
+[data-theme="dark"] .page-header p:last-child,
+[data-theme="dark"] .board-hint,
+[data-theme="dark"] .toolbar label,
+[data-theme="dark"] .card > p,
+[data-theme="dark"] .empty,
+[data-theme="dark"] .archive-list p,
+[data-theme="dark"] .history-heading p:last-child,
+[data-theme="dark"] .timeline time { color: #acbbd0; }
+[data-theme="dark"] .eyebrow { color: #91b7ff; }
+[data-theme="dark"] .toolbar,
+[data-theme="dark"] .history { background: #1a2940; border-color: #344760; }
+[data-theme="dark"] .toolbar { box-shadow: 0 5px 24px #0002; }
+[data-theme="dark"] .column { background: #142238; border-color: #344760; }
+[data-theme="dark"] .column.drop-eligible { border-color: #80a8e8; }
+[data-theme="dark"] .column.drop-over { background: #213b5c; border-color: #91b7ff; }
+[data-theme="dark"] .card { background: #21324b; border-color: #3a4d67; box-shadow: 0 2px 8px #0002; }
+[data-theme="dark"] input,
+[data-theme="dark"] select { background: #101d30; border-color: #465a76; color: #edf3ff; }
+[data-theme="dark"] input::placeholder { color: #9aabc3; }
+[data-theme="dark"] .count { background: #263c60; color: #c3d8ff; }
+[data-theme="dark"] .theme-toggle { background: #263c60; border-color: #48628a; color: #d3e2ff; }
+[data-theme="dark"] .theme-toggle:hover { border-color: #9abbf4; }
+[data-theme="dark"] .column-heading span { background: #2c405e; color: #c6d5ea; }
+[data-theme="dark"] .pending .column-heading h2 { color: #f1bd70; }
+[data-theme="dark"] .in_progress .column-heading h2 { color: #91bfff; }
+[data-theme="dark"] .done .column-heading h2 { color: #85d7ad; }
+[data-theme="dark"] .form-row button,
+[data-theme="dark"] .card-actions button:not(.text-button):not(.delete-button) { background: #477ddd; border-color: #477ddd; }
+[data-theme="dark"] .text-button,
+[data-theme="dark"] .archive-toggle { color: #91b7ff; }
+[data-theme="dark"] .delete-button { color: #ff9eaa; }
+[data-theme="dark"] .archive,
+[data-theme="dark"] .archive-list > div { border-color: #344760; }
+[data-theme="dark"] .history-heading button { background: #2c405e; color: #e0eafd; }
+[data-theme="dark"] .timeline { border-color: #405779; }
+[data-theme="dark"] .timeline li::before { border-color: #1a2940; box-shadow: 0 0 0 1px #91b7ff; }
+[data-theme="dark"] .error { background: #40212b; border-color: #8c4554; color: #ffbec7; }
 @media (max-width: 1100px) {
   .board { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .column { min-height: 250px; }
